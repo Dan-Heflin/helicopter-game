@@ -821,13 +821,19 @@ class Game {
         // Set canvas size and base speed based on device
         const isMobile = window.innerWidth < 400;
         if (isMobile) {
-            this.canvas.width = 400;
-            this.canvas.height = 400;
-            this.scrollSpeed = 3;     // Increased from 2 to 3 to match desktop
+            // Use larger virtual canvas size for gameplay
+            this.canvas.width = 600;  // Increased from window.innerWidth
+            this.canvas.height = 600; // Increased from window.innerHeight
+            
+            // Scale the canvas display using CSS
+            this.canvas.style.width = '100%';
+            this.canvas.style.height = '100%';
+            
+            this.scrollSpeed = 3;
         } else {
             this.canvas.width = 800;
             this.canvas.height = 400;
-            this.scrollSpeed = 3;     // Keep desktop speed the same
+            this.scrollSpeed = 3;
         }
         
         // Pass gameAudio when creating helicopter
@@ -945,9 +951,15 @@ class Game {
         const oldWidth = this.canvas.width;
         
         if (isMobile) {
-            this.canvas.width = 350;
-            this.canvas.height = 400;
-            this.scrollSpeed = 3;    // Updated to match desktop speed
+            // Use larger virtual canvas size
+            this.canvas.width = 600;
+            this.canvas.height = 600;
+            
+            // Scale the canvas display using CSS
+            this.canvas.style.width = '100%';
+            this.canvas.style.height = '100%';
+            
+            this.scrollSpeed = 3;
         } else {
             this.canvas.width = 800;
             this.canvas.height = 400;
@@ -1139,13 +1151,25 @@ class Game {
             return;
         }
         
-        // Draw scores
+        // Draw scores with adjusted positioning for mobile
         if (this.gameState === 'playing' || this.gameState === 'gameover') {
+            const isMobile = window.innerWidth < 400;
+            const padding = isMobile ? 20 : 10;  // More padding on mobile
+            
             this.ctx.fillStyle = this.textColor;
             this.ctx.font = '20px Arial';
-            this.ctx.fillText(`Score: ${Math.floor(this.score / 10)}`, 10, 30);
-            this.ctx.textAlign = 'right';  // Align right for high score
-            this.ctx.fillText(`High Score: ${Math.floor(this.highScore / 10)}`, this.canvas.width - 10, 30);  // Position at right edge
+            
+            // Draw current score
+            this.ctx.textAlign = 'left';
+            this.ctx.fillText(`Score: ${Math.floor(this.score / 10)}`, padding, 30);
+            
+            // Draw high score with more space from right edge
+            this.ctx.textAlign = 'right';
+            this.ctx.fillText(
+                `High Score: ${Math.floor(this.highScore / 10)}`, 
+                this.canvas.width - padding, 
+                30
+            );
             this.ctx.textAlign = 'left';  // Reset alignment
         }
 
