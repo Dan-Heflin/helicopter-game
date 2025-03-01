@@ -919,10 +919,10 @@ class Game {
             this.canvas.height = 600;
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
-            this.scrollSpeed = 4;  // Reduced to 4 for mobile
+            this.scrollSpeed = 2;  // Reduced to 2 for mobile (was 4)
+            this.baseScrollSpeed = 120;  // 2 * 60 (pixels per second)
             
             // Recalculate intervals to maintain same distance as desktop
-            // Desktop: 400px / 9 speed = 44.4 frames between obstacles
             const targetFramesBetweenObstacles = Math.round(targetObstacleDistance / 9);  // ~44 frames
             this.obstacleInterval = targetFramesBetweenObstacles;  // Keep same number of frames between obstacles
             this.bgFormationInterval = Math.round(this.obstacleInterval / 2);  // ~22 frames
@@ -930,6 +930,7 @@ class Game {
             this.canvas.width = 800;
             this.canvas.height = 400;
             this.scrollSpeed = 9;
+            this.baseScrollSpeed = 540;  // 9 * 60 (pixels per second)
             this.obstacleInterval = Math.round(targetObstacleDistance / this.scrollSpeed);  // ≈ 44
             this.bgFormationInterval = Math.round(this.obstacleInterval / 2);  // ≈ 22
         }
@@ -1051,7 +1052,8 @@ class Game {
             this.canvas.height = 600;
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
-            this.scrollSpeed = 4;  // Reduced to 4 for mobile
+            this.scrollSpeed = 2;  // Reduced to 2 for mobile (was 4)
+            this.baseScrollSpeed = 120;  // 2 * 60 (pixels per second)
             
             // Also update the intervals when resizing
             const targetObstacleDistance = 400;
@@ -1062,6 +1064,7 @@ class Game {
             this.canvas.width = 800;
             this.canvas.height = 400;
             this.scrollSpeed = 9;
+            this.baseScrollSpeed = 540;  // 9 * 60 (pixels per second)
             
             // Update intervals for desktop
             const targetObstacleDistance = 400;
@@ -1127,7 +1130,7 @@ class Game {
 
     // In the Game class, add a method to get the current scroll speed
     getScrollSpeed() {
-        // This ensures we always use the correct scroll speed value
+        // Return the raw scroll speed without any scaling
         return this.scrollSpeed;
     }
 
