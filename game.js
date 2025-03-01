@@ -1125,8 +1125,18 @@ class Game {
         requestAnimationFrame((time) => this.gameLoop(time));
     }
 
+    // In the Game class, add a method to get the current scroll speed
+    getScrollSpeed() {
+        // This ensures we always use the correct scroll speed value
+        return this.scrollSpeed;
+    }
+
+    // Then modify the update method to use this getter
     update() {
         if (this.gameState === 'playing') {
+            // Get the current scroll speed
+            const currentScrollSpeed = this.getScrollSpeed();
+            
             // Update background formations
             this.bgFormationTimer++;
             if (this.bgFormationTimer > this.bgFormationInterval) {
@@ -1137,7 +1147,7 @@ class Game {
             // Update and remove off-screen background formations
             for (let i = this.backgroundFormations.length - 1; i >= 0; i--) {
                 const formation = this.backgroundFormations[i];
-                formation.update(this.scrollSpeed);
+                formation.update(currentScrollSpeed);
                 if (formation.x + formation.width < 0) {
                     this.backgroundFormations.splice(i, 1);
                 }
@@ -1163,7 +1173,7 @@ class Game {
                 // Update and check each obstacle
                 for (let i = this.obstacles.length - 1; i >= 0; i--) {
                     const obstacle = this.obstacles[i];
-                    obstacle.update(this.scrollSpeed);
+                    obstacle.update(currentScrollSpeed);
 
                     // Remove obstacles that are off screen
                     if (obstacle.x + obstacle.width < 0) {
@@ -1191,12 +1201,12 @@ class Game {
             }
 
             // Update edge formations
-            this.edgeFormationTop.update(this.scrollSpeed);
-            this.edgeFormationBottom.update(this.scrollSpeed);
+            this.edgeFormationTop.update(currentScrollSpeed);
+            this.edgeFormationBottom.update(currentScrollSpeed);
 
             // Update helipad if it exists
             if (this.helipad && !this.helipad.isOffScreen()) {
-                this.helipad.update(this.scrollSpeed);
+                this.helipad.update(currentScrollSpeed);
             }
         }
     }
