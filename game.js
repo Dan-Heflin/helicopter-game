@@ -844,49 +844,69 @@ class GameAudio {
         // Clear existing options
         optionsContainer.innerHTML = '';
         
-        // Create simple, clearly visible options
+        // Create card-based options with new layout
         optionsContainer.innerHTML = `
-            <div class="helicopter-option" data-type="scout">
-                <h4>The Scout</h4>
-                <p>Fast and zippy, like a dragonfly of the skies.</p>
-                <div class="helicopter-stats">
-                    <div class="stat-row">
-                        <span>Lift:</span>
-                        <div class="stat-value">★★★☆☆</div>
+            <div class="helicopter-cards">
+                <div class="helicopter-card" data-type="scout">
+                    <div class="card-header">
+                        <div class="card-image scout-image"></div>
+                        <div class="card-title">
+                            <h3>Scout</h3>
+                            <p>Fast & Agile</p>
+                        </div>
                     </div>
-                    <div class="stat-row">
-                        <span>Drop:</span>
-                        <div class="stat-value">★★★☆☆</div>
+                    <div class="helicopter-stats">
+                        <div class="stat-row">
+                            <span>Lift:</span>
+                            <div class="stat-value">★★★☆☆</div>
+                        </div>
+                        <div class="stat-row">
+                            <span>Drop:</span>
+                            <div class="stat-value">★★★☆☆</div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="helicopter-option" data-type="tanker">
-                <h4>The Tanker</h4>
-                <p>Stout and tough, like a flying tank.</p>
-                <div class="helicopter-stats">
-                    <div class="stat-row">
-                        <span>Lift:</span>
-                        <div class="stat-value">★★☆☆☆</div>
+                
+                <div class="helicopter-card" data-type="heavy">
+                    <div class="card-header">
+                        <div class="card-image heavy-image"></div>
+                        <div class="card-title">
+                            <h3>Heavy</h3>
+                            <p>Powerful & Durable</p>
+                        </div>
                     </div>
-                    <div class="stat-row">
-                        <span>Drop:</span>
-                        <div class="stat-value">★★★★★</div>
+                    <div class="helicopter-stats">
+                        <div class="stat-row">
+                            <span>Lift:</span>
+                            <div class="stat-value">★★☆☆☆</div>
+                        </div>
+                        <div class="stat-row">
+                            <span>Drop:</span>
+                            <div class="stat-value">★★★★★</div>
+                        </div>
                     </div>
                 </div>
             </div>
         `;
         
         // Add click handlers to the options
-        document.querySelectorAll('.helicopter-option').forEach(option => {
-            option.addEventListener('click', () => {
-                document.querySelectorAll('.helicopter-option').forEach(el => {
+        document.querySelectorAll('.helicopter-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.helicopter-card').forEach(el => {
                     el.classList.remove('selected');
                 });
-                option.classList.add('selected');
-                this.selectedHelicopterType = option.dataset.type;
+                card.classList.add('selected');
+                this.selectedHelicopterType = card.dataset.type;
             });
         });
+        
+        // Select the current helicopter type if available
+        if (this.selectedHelicopterType) {
+            const selectedCard = document.querySelector(`.helicopter-card[data-type="${this.selectedHelicopterType}"]`);
+            if (selectedCard) {
+                selectedCard.classList.add('selected');
+            }
+        }
     }
 }
 
@@ -1243,24 +1263,6 @@ class Game {
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        if (this.gameState === 'playing' || this.gameState === 'gameover' || this.gameState === 'takeoff') {
-            // Draw background formations first
-            this.backgroundFormations.forEach(formation => formation.draw(this.ctx));
-            
-            // Draw edge formations
-            this.edgeFormationTop.draw(this.ctx);
-            this.edgeFormationBottom.draw(this.ctx);
-            
-            // Draw helipad if it exists and is on screen
-            if (this.helipad && !this.helipad.isOffScreen()) {
-                this.helipad.draw(this.ctx);
-            }
-            
-            // Then draw main obstacles and helicopter
-            this.obstacles.forEach(obstacle => obstacle.draw(this.ctx));
-            this.helicopter.draw(this.ctx);
-        }
-        
         if (this.gameState === 'start') {
             this.ctx.fillStyle = this.textColor;
             this.ctx.textAlign = 'center';
@@ -1278,6 +1280,24 @@ class Game {
             
             this.ctx.textAlign = 'left';
             return;
+        }
+        
+        if (this.gameState === 'playing' || this.gameState === 'gameover' || this.gameState === 'takeoff') {
+            // Draw background formations first
+            this.backgroundFormations.forEach(formation => formation.draw(this.ctx));
+            
+            // Draw edge formations
+            this.edgeFormationTop.draw(this.ctx);
+            this.edgeFormationBottom.draw(this.ctx);
+            
+            // Draw helipad if it exists and is on screen
+            if (this.helipad && !this.helipad.isOffScreen()) {
+                this.helipad.draw(this.ctx);
+            }
+            
+            // Then draw main obstacles and helicopter
+            this.obstacles.forEach(obstacle => obstacle.draw(this.ctx));
+            this.helicopter.draw(this.ctx);
         }
         
         // Draw scores with adjusted positioning for mobile
@@ -1526,49 +1546,69 @@ class Game {
         // Clear existing options
         optionsContainer.innerHTML = '';
         
-        // Create simple, clearly visible options
+        // Create card-based options with new layout
         optionsContainer.innerHTML = `
-            <div class="helicopter-option" data-type="scout">
-                <h4>The Scout</h4>
-                <p>Fast and zippy, like a dragonfly of the skies.</p>
-                <div class="helicopter-stats">
-                    <div class="stat-row">
-                        <span>Lift:</span>
-                        <div class="stat-value">★★★☆☆</div>
+            <div class="helicopter-cards">
+                <div class="helicopter-card" data-type="scout">
+                    <div class="card-header">
+                        <div class="card-image scout-image"></div>
+                        <div class="card-title">
+                            <h3>Scout</h3>
+                            <p>Fast & Agile</p>
+                        </div>
                     </div>
-                    <div class="stat-row">
-                        <span>Drop:</span>
-                        <div class="stat-value">★★★☆☆</div>
+                    <div class="helicopter-stats">
+                        <div class="stat-row">
+                            <span>Lift:</span>
+                            <div class="stat-value">★★★☆☆</div>
+                        </div>
+                        <div class="stat-row">
+                            <span>Drop:</span>
+                            <div class="stat-value">★★★☆☆</div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="helicopter-option" data-type="tanker">
-                <h4>The Tanker</h4>
-                <p>Stout and tough, like a flying tank.</p>
-                <div class="helicopter-stats">
-                    <div class="stat-row">
-                        <span>Lift:</span>
-                        <div class="stat-value">★★☆☆☆</div>
+                
+                <div class="helicopter-card" data-type="heavy">
+                    <div class="card-header">
+                        <div class="card-image heavy-image"></div>
+                        <div class="card-title">
+                            <h3>Heavy</h3>
+                            <p>Powerful & Durable</p>
+                        </div>
                     </div>
-                    <div class="stat-row">
-                        <span>Drop:</span>
-                        <div class="stat-value">★★★★★</div>
+                    <div class="helicopter-stats">
+                        <div class="stat-row">
+                            <span>Lift:</span>
+                            <div class="stat-value">★★☆☆☆</div>
+                        </div>
+                        <div class="stat-row">
+                            <span>Drop:</span>
+                            <div class="stat-value">★★★★★</div>
+                        </div>
                     </div>
                 </div>
             </div>
         `;
         
         // Add click handlers to the options
-        document.querySelectorAll('.helicopter-option').forEach(option => {
-            option.addEventListener('click', () => {
-                document.querySelectorAll('.helicopter-option').forEach(el => {
+        document.querySelectorAll('.helicopter-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.helicopter-card').forEach(el => {
                     el.classList.remove('selected');
                 });
-                option.classList.add('selected');
-                this.selectedHelicopterType = option.dataset.type;
+                card.classList.add('selected');
+                this.selectedHelicopterType = card.dataset.type;
             });
         });
+        
+        // Select the current helicopter type if available
+        if (this.selectedHelicopterType) {
+            const selectedCard = document.querySelector(`.helicopter-card[data-type="${this.selectedHelicopterType}"]`);
+            if (selectedCard) {
+                selectedCard.classList.add('selected');
+            }
+        }
     }
 }
 
@@ -1605,5 +1645,5 @@ class ExplosionParticle {
 // Start the game when the window loads
 window.onload = () => {
     const game = new Game();
-    game.start();  // Back to just start()
+    game.start();
 }; 
