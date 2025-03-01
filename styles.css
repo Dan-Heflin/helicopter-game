@@ -1,0 +1,37 @@
+/* Game control buttons */
+.game-control {
+  background-color: rgba(0, 0, 0, 0);
+  color: #4a895c;
+  border: 2px solid #4a895c;
+  border-radius: 4px;
+  padding: 8px;
+  margin: 0 5px 0 0;
+  cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+  transition: background-color 0.2s ease;
+  width: 36px;
+  height: 36px;
+}
+
+.game-control:hover {
+  background-color: rgba(74, 137, 92, 0.8);
+  color: white;
+}
+
+/* Audio controls container */
+.audio-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+}
+
+/* Volume slider styling */
+#volumeSlider {
+  margin-right: 10px;
+  width: 80px;
+} 

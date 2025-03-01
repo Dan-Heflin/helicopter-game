@@ -35,6 +35,14 @@ class Particle {
     }
 }
 
+class HelicopterType {
+    constructor(name, description, stats) {
+        this.name = name;
+        this.description = description;
+        this.stats = stats;
+    }
+}
+
 class Helicopter {
     constructor(x, y, canvas, gameAudio) {
         // Position and canvas
@@ -43,22 +51,22 @@ class Helicopter {
         this.canvas = canvas;
         this.gameAudio = gameAudio;
         
-        // Physics properties (these could vary by helicopter type later)
+        // Physics properties
         this.velocity = 0;
         this.gravity = 0.2;
         this.liftForce = -2.5;
         this.maxLiftVelocity = 4;
         this.maxFallVelocity = 6;
         
-        // Size (could vary by type)
-        this.width = 50;  // Slightly smaller than before
-        this.height = 20; // More narrow profile
+        // Size
+        this.width = 50;
+        this.height = 20;
         
         // Visual properties
         this.bodyColor = '#D3D3D3';  // Light gray
         this.accentColor = '#FFD700'; // Bright yellow
         this.rotorColor = '#1A1A1A';  // Black
-        this.rotorSpeed = 0.5;  // For animation
+        this.rotorSpeed = 0.5;
         this.rotorAngle = 0;
         
         // State
@@ -118,7 +126,7 @@ class Helicopter {
     draw(ctx) {
         ctx.save();
         
-        // Draw particles first (behind helicopter)
+        // Draw particles
         this.particles.forEach(particle => particle.draw(ctx));
         
         // Main body (sleek teardrop shape)
@@ -574,11 +582,11 @@ class EdgeFormation {
 }
 
 class Helipad {
-    constructor(canvas) {
+    constructor(canvas, offset = 0) {
         this.canvas = canvas;
         this.width = 120;
         this.height = 10;
-        this.x = 60;
+        this.x = 60 + offset;
         this.y = canvas.height - this.height - 20;
     }
 
@@ -588,62 +596,55 @@ class Helipad {
     }
 
     draw(ctx) {
-        // Draw frame
+        // Draw helipad base structure
         ctx.fillStyle = '#444444';
         
         // Frame dimensions
         const frameThickness = 5;
-        const frameHeight = 25;
-        
-        // Top horizontal support
-        ctx.fillRect(this.x, this.y + this.height, this.width, frameThickness);
+        const frameHeight = 15;
         
         // Left vertical support
-        ctx.fillRect(this.x, this.y + this.height, frameThickness, frameHeight);
+        ctx.fillRect(this.x + 10, this.y + this.height, frameThickness, frameHeight);
         
         // Right vertical support
-        ctx.fillRect(this.x + this.width - frameThickness, this.y + this.height, frameThickness, frameHeight);
+        ctx.fillRect(this.x + this.width - 15, this.y + this.height, frameThickness, frameHeight);
         
         // Bottom horizontal support
         ctx.fillRect(this.x, this.y + this.height + frameHeight, this.width, frameThickness);
         
-        // X-frame in the middle
-        ctx.beginPath();
-        const xStart = this.x + 20;
-        const xEnd = this.x + this.width - 20;
-        const yStart = this.y + this.height + 5;
-        const yEnd = this.y + this.height + frameHeight;
-        
-        // Draw the X
-        ctx.lineWidth = frameThickness;
-        ctx.strokeStyle = '#444444';
-        ctx.moveTo(xStart, yStart);
-        ctx.lineTo(xEnd, yEnd);
-        ctx.moveTo(xEnd, yStart);
-        ctx.lineTo(xStart, yEnd);
-        ctx.stroke();
-        
-        // Draw main pad
-        ctx.fillStyle = '#666666';
+        // Draw main helipad
+        ctx.fillStyle = '#333333';
         ctx.fillRect(this.x, this.y, this.width, this.height);
         
-        // Draw helipad markings
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(this.x + 10, this.y + this.height/2 - 1, this.width - 20, 2);
+        // Draw landing markers
+        ctx.fillStyle = '#FFFF00';
+        const markerWidth = 10;
+        const markerHeight = 5;
+        const spacing = 20;
         
-        // Draw H marking
-        const hWidth = 20;
-        const hHeight = 6;
-        const hX = this.x + (this.width - hWidth) / 2;
-        const hY = this.y + (this.height - hHeight) / 2;
+        for (let i = 0; i < 5; i++) {
+            ctx.fillRect(
+                this.x + 10 + (i * spacing), 
+                this.y + (this.height - markerHeight) / 2, 
+                markerWidth, 
+                markerHeight
+            );
+        }
         
-        ctx.fillRect(hX, hY, 2, hHeight);
-        ctx.fillRect(hX + hWidth - 2, hY, 2, hHeight);
-        ctx.fillRect(hX, hY + (hHeight - 2) / 2, hWidth, 2);
+        // Removed the H marking for better visibility
     }
 
     isOffScreen() {
         return this.x + this.width < 0;
+    }
+
+    collidesWith(helicopter) {
+        return (
+            helicopter.x + helicopter.width > this.x &&
+            helicopter.x < this.x + this.width &&
+            helicopter.y + helicopter.height > this.y &&
+            helicopter.y < this.y + this.height
+        );
     }
 }
 
@@ -671,6 +672,7 @@ class GameAudio {
         
         this.loadSounds();
         this.setupMuteButton();
+        this.setupHelicopterButton();
         this.setupVolumeControl();
 
         // Add event listener for user interaction
@@ -749,20 +751,24 @@ class GameAudio {
     
     setupMuteButton() {
         const muteButton = document.getElementById('muteButton');
-        const volumeSlider = document.getElementById('volumeSlider');
-        
-        muteButton.addEventListener('click', () => {
-            this.isMuted = !this.isMuted;
-            const volume = volumeSlider.value / 100;
-            this.masterGain.gain.value = this.isMuted ? 0 : volume;
+        if (muteButton) {
+            // Add the game-control class
+            muteButton.className = 'game-control';
             
-            // Update HTML5 Audio elements
-            this.crashSound.muted = this.isMuted;
-            this.difficultySound.muted = this.isMuted;  // Updated name
-            this.highScoreSound.muted = this.isMuted;
-            
-            muteButton.textContent = this.isMuted ? '🔇' : '🔊';
-        });
+            muteButton.addEventListener('click', () => {
+                this.isMuted = !this.isMuted;
+                const volumeSlider = document.getElementById('volumeSlider');
+                const volume = volumeSlider ? volumeSlider.value / 100 : 0.5;
+                this.masterGain.gain.value = this.isMuted ? 0 : volume;
+                
+                // Update HTML5 Audio elements
+                this.crashSound.muted = this.isMuted;
+                this.difficultySound.muted = this.isMuted;
+                this.highScoreSound.muted = this.isMuted;
+                
+                muteButton.textContent = this.isMuted ? '🔇' : '🔊';
+            });
+        }
     }
 
     setupVolumeControl() {
@@ -776,6 +782,86 @@ class GameAudio {
             this.difficultySound.volume = volume;  // Updated name
             this.highScoreSound.volume = volume;
         });
+    }
+
+    setupHelicopterButton() {
+        // Find the helicopter button element
+        const helicopterButton = document.getElementById('helicopterButton');
+        
+        if (!helicopterButton) {
+            console.error('Helicopter button not found');
+            // Create the button if it doesn't exist in the HTML
+            const muteButton = document.getElementById('muteButton');
+            if (muteButton && muteButton.parentElement) {
+                const newButton = document.createElement('button');
+                newButton.id = 'helicopterButton';
+                newButton.textContent = '🚁';
+                newButton.title = 'Change Helicopter';
+                
+                // Copy the exact styles from the mute button
+                newButton.style.width = '30px';
+                newButton.style.height = '30px';
+                newButton.style.fontSize = '18px';
+                newButton.style.padding = '6px';
+                newButton.style.background = 'rgba(26, 26, 26, 0.8)';
+                newButton.style.border = '2px solid #2E8B57';
+                newButton.style.color = 'white';
+                newButton.style.borderRadius = '4px';
+                newButton.style.cursor = 'pointer';
+                newButton.style.display = 'flex';
+                newButton.style.alignItems = 'center';
+                newButton.style.justifyContent = 'center';
+                newButton.style.transition = 'background-color 0.2s';
+                newButton.style.marginRight = '5px'; // Add margin to separate from mute button
+                
+                // Add hover effect
+                newButton.onmouseover = () => {
+                    newButton.style.background = 'rgba(46, 139, 87, 0.8)';
+                };
+                newButton.onmouseout = () => {
+                    newButton.style.background = 'rgba(26, 26, 26, 0.8)';
+                };
+                
+                muteButton.parentElement.insertBefore(newButton, muteButton);
+                
+                // Set the click handler directly
+                newButton.onclick = () => {
+                    console.log('Helicopter button clicked');
+                };
+                
+                return;
+            }
+            return;
+        }
+        
+        // If the button already exists, apply the same styles
+        helicopterButton.style.width = '30px';
+        helicopterButton.style.height = '30px';
+        helicopterButton.style.fontSize = '18px';
+        helicopterButton.style.padding = '6px';
+        helicopterButton.style.background = 'rgba(26, 26, 26, 0.8)';
+        helicopterButton.style.border = '2px solid #2E8B57';
+        helicopterButton.style.color = 'white';
+        helicopterButton.style.borderRadius = '4px';
+        helicopterButton.style.cursor = 'pointer';
+        helicopterButton.style.display = 'flex';
+        helicopterButton.style.alignItems = 'center';
+        helicopterButton.style.justifyContent = 'center';
+        helicopterButton.style.transition = 'background-color 0.2s';
+        helicopterButton.style.marginRight = '5px';
+        
+        // Add hover effect
+        helicopterButton.onmouseover = () => {
+            helicopterButton.style.background = 'rgba(46, 139, 87, 0.8)';
+        };
+        helicopterButton.onmouseout = () => {
+            helicopterButton.style.background = 'rgba(26, 26, 26, 0.8)';
+        };
+        
+        // Placeholder click handler
+        helicopterButton.onclick = () => {
+            console.log('Helicopter button clicked');
+        };
     }
 
     // Add back stopSound method
@@ -833,9 +919,9 @@ class Game {
             this.canvas.height = 600;
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
-            this.scrollSpeed = 12;  // Reduced from 13.5
-            this.obstacleInterval = Math.round(targetObstacleDistance / this.scrollSpeed);  // ≈ 33
-            this.bgFormationInterval = Math.round(this.obstacleInterval / 2);  // ≈ 17
+            this.scrollSpeed = 9;  // Changed to match desktop
+            this.obstacleInterval = Math.round(targetObstacleDistance / this.scrollSpeed);  // ≈ 44
+            this.bgFormationInterval = Math.round(this.obstacleInterval / 2);  // ≈ 22
         } else {
             this.canvas.width = 800;
             this.canvas.height = 400;
@@ -845,7 +931,7 @@ class Game {
         }
         
         // Pass gameAudio when creating helicopter
-        this.helicopter = new Helicopter(100, this.canvas.height / 2, this.canvas, this.gameAudio);
+        this.helicopter = new Helicopter(130, this.canvas.height / 2, this.canvas, this.gameAudio);
         
         // Rest of constructor code...
         this.gameState = 'start';
@@ -925,8 +1011,8 @@ class Game {
         this.edgeFormationTop = new EdgeFormation(this.canvas, true);
         this.edgeFormationBottom = new EdgeFormation(this.canvas, false);
 
-        // Create helipad immediately
-        this.helipad = new Helipad(this.canvas);
+        // Create helipad with offset
+        this.helipad = new Helipad(this.canvas, 30);
 
         this.fps = 60;
         this.frameInterval = 1000 / this.fps;
@@ -961,11 +1047,11 @@ class Game {
             this.canvas.height = 600;
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
-            this.scrollSpeed = 12;  // Match new mobile speed
+            this.scrollSpeed = 9;  // Match desktop speed
         } else {
             this.canvas.width = 800;
             this.canvas.height = 400;
-            this.scrollSpeed = 9;   // Match new desktop speed
+            this.scrollSpeed = 9;
         }
 
         // Adjust helicopter position proportionally if canvas size changed
@@ -1203,21 +1289,21 @@ class Game {
 
     reset() {
         // Stop helicopter sound if playing
-        if (this.helicopter.liftSound) {  // Changed from this.helicopterSound
+        if (this.helicopter.liftSound) {
             this.gameAudio.stopSound(this.helicopter.liftSound);
             this.helicopter.liftSound = null;
         }
-        // Pass gameAudio when creating new helicopter
-        this.helicopter = new Helicopter(100, this.canvas.height - 50, this.canvas, this.gameAudio);
-        this.helipad = new Helipad(this.canvas);  // Create new helipad
+        
+        // Create new helicopter without type parameter
+        this.helicopter = new Helicopter(130, this.canvas.height - 50, this.canvas, this.gameAudio);
+        
+        this.helipad = new Helipad(this.canvas, 30);
         this.obstacles = [];
         this.obstacleTimer = 0;
         this.score = 0;
         this.isGameOver = false;
-        this.lastMilestone = 0;  // Reset milestone tracking
-        this.gameState = 'start';  // Make sure we reset game state
-        
-        // Don't reset highScore here since it should persist
+        this.lastMilestone = 0;
+        this.gameState = 'start';
         
         // Clear explosion particles
         this.explosionParticles = [];
