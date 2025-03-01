@@ -750,24 +750,28 @@ class GameAudio {
     }
     
     setupMuteButton() {
-        const muteButton = document.getElementById('muteButton');
+        const muteButton = document.querySelector('.utility-button[data-action="mute"]');
         if (muteButton) {
-            // Add the game-control class
-            muteButton.className = 'game-control';
-            
-            muteButton.addEventListener('click', () => {
+            // Set up click handler for mute button
+            muteButton.onclick = () => {
+                // Toggle mute state
                 this.isMuted = !this.isMuted;
+                
+                // Get volume from slider
                 const volumeSlider = document.getElementById('volumeSlider');
                 const volume = volumeSlider ? volumeSlider.value / 100 : 0.5;
+                
+                // Apply mute/unmute to audio context
                 this.masterGain.gain.value = this.isMuted ? 0 : volume;
                 
-                // Update HTML5 Audio elements
-                this.crashSound.muted = this.isMuted;
-                this.difficultySound.muted = this.isMuted;
-                this.highScoreSound.muted = this.isMuted;
+                // Update HTML5 Audio elements if they exist
+                if (this.crashSound) this.crashSound.muted = this.isMuted;
+                if (this.difficultySound) this.difficultySound.muted = this.isMuted;
+                if (this.highScoreSound) this.highScoreSound.muted = this.isMuted;
                 
+                // Update button icon
                 muteButton.textContent = this.isMuted ? '🔇' : '🔊';
-            });
+            };
         }
     }
 
@@ -785,83 +789,40 @@ class GameAudio {
     }
 
     setupHelicopterButton() {
-        // Find the helicopter button element
-        const helicopterButton = document.getElementById('helicopterButton');
+        const helicopterButton = document.querySelector('.utility-button[data-action="helicopter"]');
+        const modal = document.getElementById('helicopterModal');
+        const closeButton = document.getElementById('closeHelicopterModal');
         
-        if (!helicopterButton) {
-            console.error('Helicopter button not found');
-            // Create the button if it doesn't exist in the HTML
-            const muteButton = document.getElementById('muteButton');
-            if (muteButton && muteButton.parentElement) {
-                const newButton = document.createElement('button');
-                newButton.id = 'helicopterButton';
-                newButton.textContent = '🚁';
-                newButton.title = 'Change Helicopter';
-                
-                // Copy the exact styles from the mute button
-                newButton.style.width = '30px';
-                newButton.style.height = '30px';
-                newButton.style.fontSize = '18px';
-                newButton.style.padding = '6px';
-                newButton.style.background = 'rgba(26, 26, 26, 0.8)';
-                newButton.style.border = '2px solid #2E8B57';
-                newButton.style.color = 'white';
-                newButton.style.borderRadius = '4px';
-                newButton.style.cursor = 'pointer';
-                newButton.style.display = 'flex';
-                newButton.style.alignItems = 'center';
-                newButton.style.justifyContent = 'center';
-                newButton.style.transition = 'background-color 0.2s';
-                newButton.style.marginRight = '5px'; // Add margin to separate from mute button
-                
-                // Add hover effect
-                newButton.onmouseover = () => {
-                    newButton.style.background = 'rgba(46, 139, 87, 0.8)';
-                };
-                newButton.onmouseout = () => {
-                    newButton.style.background = 'rgba(26, 26, 26, 0.8)';
-                };
-                
-                muteButton.parentElement.insertBefore(newButton, muteButton);
-                
-                // Set the click handler directly
-                newButton.onclick = () => {
-                    console.log('Helicopter button clicked');
-                };
-                
-                return;
-            }
-            return;
+        if (helicopterButton) {
+            // Set up click handler to show helicopter modal
+            helicopterButton.onclick = () => {
+                if (modal) {
+                    // Populate options before showing the modal
+                    this.populateHelicopterOptions();
+                    modal.style.display = 'flex';
+                }
+            };
         }
         
-        // If the button already exists, apply the same styles
-        helicopterButton.style.width = '30px';
-        helicopterButton.style.height = '30px';
-        helicopterButton.style.fontSize = '18px';
-        helicopterButton.style.padding = '6px';
-        helicopterButton.style.background = 'rgba(26, 26, 26, 0.8)';
-        helicopterButton.style.border = '2px solid #2E8B57';
-        helicopterButton.style.color = 'white';
-        helicopterButton.style.borderRadius = '4px';
-        helicopterButton.style.cursor = 'pointer';
-        helicopterButton.style.display = 'flex';
-        helicopterButton.style.alignItems = 'center';
-        helicopterButton.style.justifyContent = 'center';
-        helicopterButton.style.transition = 'background-color 0.2s';
-        helicopterButton.style.marginRight = '5px';
+        if (closeButton) {
+            // Set up close button handler
+            closeButton.onclick = () => {
+                if (modal) {
+                    modal.style.display = 'none';
+                }
+            };
+        }
         
-        // Add hover effect
-        helicopterButton.onmouseover = () => {
-            helicopterButton.style.background = 'rgba(46, 139, 87, 0.8)';
-        };
-        helicopterButton.onmouseout = () => {
-            helicopterButton.style.background = 'rgba(26, 26, 26, 0.8)';
-        };
-        
-        // Placeholder click handler
-        helicopterButton.onclick = () => {
-            console.log('Helicopter button clicked');
-        };
+        // Add click handler to close modal when clicking outside
+        if (modal) {
+            modal.addEventListener('click', (event) => {
+                // Check if the click was directly on the modal background
+                // (not on any of its children)
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
     }
 
     // Add back stopSound method
@@ -873,6 +834,59 @@ class GameAudio {
                 console.error('Error stopping sound:', error);
             }
         }
+    }
+
+    // Add this method to populate the helicopter options in the modal
+    populateHelicopterOptions() {
+        const optionsContainer = document.querySelector('.helicopter-options');
+        if (!optionsContainer) return;
+        
+        // Clear existing options
+        optionsContainer.innerHTML = '';
+        
+        // Create simple, clearly visible options
+        optionsContainer.innerHTML = `
+            <div class="helicopter-option" data-type="scout">
+                <h4>The Scout</h4>
+                <p>Fast and zippy, like a dragonfly of the skies.</p>
+                <div class="helicopter-stats">
+                    <div class="stat-row">
+                        <span>Lift:</span>
+                        <div class="stat-value">★★★☆☆</div>
+                    </div>
+                    <div class="stat-row">
+                        <span>Drop:</span>
+                        <div class="stat-value">★★★☆☆</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="helicopter-option" data-type="tanker">
+                <h4>The Tanker</h4>
+                <p>Stout and tough, like a flying tank.</p>
+                <div class="helicopter-stats">
+                    <div class="stat-row">
+                        <span>Lift:</span>
+                        <div class="stat-value">★★☆☆☆</div>
+                    </div>
+                    <div class="stat-row">
+                        <span>Drop:</span>
+                        <div class="stat-value">★★★★★</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add click handlers to the options
+        document.querySelectorAll('.helicopter-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.helicopter-option').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                option.classList.add('selected');
+                this.selectedHelicopterType = option.dataset.type;
+            });
+        });
     }
 }
 
@@ -1045,6 +1059,9 @@ class Game {
 
         // Add explosion particles
         this.explosionParticles = [];
+
+        // Set up helicopter button
+        this.setupHelicopterButton();
     }
 
     setupCanvasSize() {
@@ -1472,6 +1489,86 @@ class Game {
     clearHighScore() {
         this.highScore = 0;
         localStorage.setItem('highScore', '0');
+    }
+
+    // Add this method to the Game class to set up the helicopter button
+    setupHelicopterButton() {
+        const helicopterButton = document.querySelector('.utility-button[data-action="helicopter"]');
+        const modal = document.getElementById('helicopterModal');
+        const closeButton = document.getElementById('closeHelicopterModal');
+        
+        if (helicopterButton) {
+            // Set up click handler to show helicopter modal
+            helicopterButton.onclick = () => {
+                if (modal) {
+                    // Populate options before showing the modal
+                    this.populateHelicopterOptions();
+                    modal.style.display = 'flex';
+                }
+            };
+        }
+        
+        if (closeButton) {
+            // Set up close button handler
+            closeButton.onclick = () => {
+                if (modal) {
+                    modal.style.display = 'none';
+                }
+            };
+        }
+    }
+
+    // Add this method to populate the helicopter options in the modal
+    populateHelicopterOptions() {
+        const optionsContainer = document.querySelector('.helicopter-options');
+        if (!optionsContainer) return;
+        
+        // Clear existing options
+        optionsContainer.innerHTML = '';
+        
+        // Create simple, clearly visible options
+        optionsContainer.innerHTML = `
+            <div class="helicopter-option" data-type="scout">
+                <h4>The Scout</h4>
+                <p>Fast and zippy, like a dragonfly of the skies.</p>
+                <div class="helicopter-stats">
+                    <div class="stat-row">
+                        <span>Lift:</span>
+                        <div class="stat-value">★★★☆☆</div>
+                    </div>
+                    <div class="stat-row">
+                        <span>Drop:</span>
+                        <div class="stat-value">★★★☆☆</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="helicopter-option" data-type="tanker">
+                <h4>The Tanker</h4>
+                <p>Stout and tough, like a flying tank.</p>
+                <div class="helicopter-stats">
+                    <div class="stat-row">
+                        <span>Lift:</span>
+                        <div class="stat-value">★★☆☆☆</div>
+                    </div>
+                    <div class="stat-row">
+                        <span>Drop:</span>
+                        <div class="stat-value">★★★★★</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add click handlers to the options
+        document.querySelectorAll('.helicopter-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.helicopter-option').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                option.classList.add('selected');
+                this.selectedHelicopterType = option.dataset.type;
+            });
+        });
     }
 }
 

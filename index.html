@@ -192,7 +192,7 @@
             z-index: 100;
         }
 
-        #muteButton {
+        .utility-button {
             width: 30px;
             height: 30px;
             font-size: 18px;
@@ -208,7 +208,7 @@
             transition: background-color 0.2s;
         }
 
-        #muteButton:hover {
+        .utility-button:hover {
             background: rgba(46, 139, 87, 0.8);
         }
 
@@ -249,7 +249,8 @@
         <div style="position: relative;">
             <canvas id="gameCanvas"></canvas>
             <div class="audio-controls">
-                <button id="muteButton" aria-label="Toggle sound">🔊</button>
+                <button class="utility-button" data-action="helicopter" aria-label="Change helicopter">🚁</button>
+                <button class="utility-button" data-action="mute" aria-label="Toggle sound">🔊</button>
                 <input 
                     type="range" 
                     id="volumeSlider" 
@@ -274,6 +275,16 @@
                     <input type="text" id="initialsInput" maxlength="3" autocomplete="off">
                     <button id="submitScore">Submit</button>
                 </div>
+            </div>
+        </div>
+        <div id="helicopterModal" class="modal">
+            <div class="modal-content">
+                <h3>Helicopter Selection</h3>
+                <p>Choose your helicopter type:</p>
+                <div class="helicopter-options">
+                    <!-- Content will be added with JavaScript -->
+                </div>
+                <button id="closeHelicopterModal" class="close-button">Close</button>
             </div>
         </div>
     </div>
