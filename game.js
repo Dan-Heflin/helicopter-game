@@ -818,22 +818,30 @@ class Game {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         
-        // Set canvas size and base speed based on device
+        // Set target FPS to 60
+        this.fps = 60;
+        this.frameInterval = 1000 / this.fps;
+        this.lastTime = 0;
+        
         const isMobile = window.innerWidth < 400;
+        
+        // Base obstacle distance we want to maintain (in pixels)
+        const targetObstacleDistance = 400;  // Reduced from 630 to 400
+        
         if (isMobile) {
-            // Use larger virtual canvas size for gameplay
             this.canvas.width = 600;
             this.canvas.height = 600;
-            
-            // Scale the canvas display using CSS
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
-            
-            this.scrollSpeed = 4;
+            this.scrollSpeed = 13.5;
+            this.obstacleInterval = Math.round(targetObstacleDistance / this.scrollSpeed);  // ≈ 30
+            this.bgFormationInterval = Math.round(this.obstacleInterval / 2);  // ≈ 15
         } else {
             this.canvas.width = 800;
             this.canvas.height = 400;
-            this.scrollSpeed = 3;
+            this.scrollSpeed = 9;
+            this.obstacleInterval = Math.round(targetObstacleDistance / this.scrollSpeed);  // ≈ 44
+            this.bgFormationInterval = Math.round(this.obstacleInterval / 2);  // ≈ 22
         }
         
         // Pass gameAudio when creating helicopter
@@ -847,7 +855,6 @@ class Game {
         
         this.obstacles = [];
         this.obstacleTimer = 0;
-        this.obstacleInterval = 120;
         
         // Load leaderboard after initialization
         this.loadLeaderboard();
@@ -913,7 +920,6 @@ class Game {
 
         this.backgroundFormations = [];
         this.bgFormationTimer = 0;
-        this.bgFormationInterval = 60; // More frequent than main obstacles
 
         // Replace ConstantFormation with EdgeFormation
         this.edgeFormationTop = new EdgeFormation(this.canvas, true);
@@ -951,19 +957,15 @@ class Game {
         const oldWidth = this.canvas.width;
         
         if (isMobile) {
-            // Use larger virtual canvas size
             this.canvas.width = 600;
             this.canvas.height = 600;
-            
-            // Scale the canvas display using CSS
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
-            
-            this.scrollSpeed = 4;
+            this.scrollSpeed = 13.5;  // Match new mobile speed
         } else {
             this.canvas.width = 800;
             this.canvas.height = 400;
-            this.scrollSpeed = 3;
+            this.scrollSpeed = 9;   // Match new desktop speed
         }
 
         // Adjust helicopter position proportionally if canvas size changed
@@ -1007,34 +1009,18 @@ class Game {
     }
 
     gameLoop(timestamp) {
-        // Update FPS counter
-        this.updateFps(timestamp);
-        
-        // Scale movement speeds based on frame rate
-        const speedAdjustment = this.speedScale;
-        
-        if (this.gameState === 'playing') {
-            // Adjust scroll speed
-            const adjustedScrollSpeed = this.scrollSpeed * speedAdjustment;
+        // Calculate time elapsed
+        const elapsed = timestamp - this.lastTime;
+
+        // Only update if enough time has passed
+        if (elapsed > this.frameInterval) {
+            // Update last time, accounting for any excess time
+            this.lastTime = timestamp - (elapsed % this.frameInterval);
             
-            // Update game objects with adjusted speed
-            this.backgroundFormations.forEach(formation => 
-                formation.update(adjustedScrollSpeed));
-            this.obstacles.forEach(obstacle => 
-                obstacle.update(adjustedScrollSpeed));
-            this.edgeFormationTop.update(adjustedScrollSpeed);
-            this.edgeFormationBottom.update(adjustedScrollSpeed);
-            
-            // Adjust helicopter physics
-            this.helicopter.gravity = 0.2 * speedAdjustment;
-            this.helicopter.liftForce = -2.5 * speedAdjustment;
-            
-            // Update score at consistent rate
-            this.score += speedAdjustment;
+            this.update();
+            this.draw();
         }
         
-        this.update();
-        this.draw();
         requestAnimationFrame((time) => this.gameLoop(time));
     }
 
@@ -1098,6 +1084,9 @@ class Game {
                     this.gameAudio.play('difficulty');  // Updated name
                     this.lastMilestone = currentMilestone;
                 }
+
+                // Update score based on frame rate
+                this.score += (60 / this.fps);  // Normalize score increase to 60fps
             }
 
             // Update edge formations
