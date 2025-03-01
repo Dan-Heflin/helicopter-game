@@ -919,7 +919,7 @@ class Game {
             this.canvas.height = 600;
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
-            this.scrollSpeed = 9;  // Changed to match desktop
+            this.scrollSpeed = 7;  // Reduced from 9 to 7 for mobile
             this.obstacleInterval = Math.round(targetObstacleDistance / this.scrollSpeed);  // ≈ 44
             this.bgFormationInterval = Math.round(this.obstacleInterval / 2);  // ≈ 22
         } else {
@@ -1047,7 +1047,7 @@ class Game {
             this.canvas.height = 600;
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
-            this.scrollSpeed = 9;  // Match desktop speed
+            this.scrollSpeed = 7;  // Reduced from 9 to 7 for mobile
         } else {
             this.canvas.width = 800;
             this.canvas.height = 400;
