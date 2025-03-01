@@ -919,13 +919,17 @@ class Game {
             this.canvas.height = 600;
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
-            this.scrollSpeed = 2;  // Reduced to 2 for mobile (was 4)
-            this.baseScrollSpeed = 120;  // 2 * 60 (pixels per second)
+            this.scrollSpeed = 8;  // Doubled from 4 to 8
+            this.baseScrollSpeed = 480;  // 8 * 60 (pixels per second)
             
-            // Recalculate intervals to maintain same distance as desktop
-            const targetFramesBetweenObstacles = Math.round(targetObstacleDistance / 9);  // ~44 frames
-            this.obstacleInterval = targetFramesBetweenObstacles;  // Keep same number of frames between obstacles
-            this.bgFormationInterval = Math.round(this.obstacleInterval / 2);  // ~22 frames
+            // Calculate the desktop pixel distance between obstacles
+            const desktopScrollSpeed = 9;
+            const desktopObstacleInterval = Math.round(targetObstacleDistance / desktopScrollSpeed); // ~44
+            const desktopPixelDistance = desktopScrollSpeed * desktopObstacleInterval; // ~400px
+            
+            // Adjust mobile intervals to maintain the same visual distance
+            this.obstacleInterval = Math.round(desktopPixelDistance / this.scrollSpeed); // ~50 frames
+            this.bgFormationInterval = Math.round(this.obstacleInterval / 2); // ~25 frames
         } else {
             this.canvas.width = 800;
             this.canvas.height = 400;
@@ -1047,19 +1051,25 @@ class Game {
         const isMobile = window.innerWidth < 400;
         const oldWidth = this.canvas.width;
         
+        // Base obstacle distance we want to maintain (in pixels)
+        const targetObstacleDistance = 400;
+        
         if (isMobile) {
             this.canvas.width = 600;
             this.canvas.height = 600;
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
-            this.scrollSpeed = 2;  // Reduced to 2 for mobile (was 4)
-            this.baseScrollSpeed = 120;  // 2 * 60 (pixels per second)
+            this.scrollSpeed = 8;  // Doubled from 4 to 8
+            this.baseScrollSpeed = 480;  // 8 * 60 (pixels per second)
             
-            // Also update the intervals when resizing
-            const targetObstacleDistance = 400;
-            const targetFramesBetweenObstacles = Math.round(targetObstacleDistance / 9);
-            this.obstacleInterval = targetFramesBetweenObstacles;
-            this.bgFormationInterval = Math.round(this.obstacleInterval / 2);
+            // Calculate the desktop pixel distance between obstacles
+            const desktopScrollSpeed = 9;
+            const desktopObstacleInterval = Math.round(targetObstacleDistance / desktopScrollSpeed); // ~44
+            const desktopPixelDistance = desktopScrollSpeed * desktopObstacleInterval; // ~400px
+            
+            // Adjust mobile intervals to maintain the same visual distance
+            this.obstacleInterval = Math.round(desktopPixelDistance / this.scrollSpeed); // ~50 frames
+            this.bgFormationInterval = Math.round(this.obstacleInterval / 2); // ~25 frames
         } else {
             this.canvas.width = 800;
             this.canvas.height = 400;
@@ -1067,9 +1077,8 @@ class Game {
             this.baseScrollSpeed = 540;  // 9 * 60 (pixels per second)
             
             // Update intervals for desktop
-            const targetObstacleDistance = 400;
-            this.obstacleInterval = Math.round(targetObstacleDistance / this.scrollSpeed);
-            this.bgFormationInterval = Math.round(this.obstacleInterval / 2);
+            this.obstacleInterval = Math.round(targetObstacleDistance / this.scrollSpeed);  // ≈ 44
+            this.bgFormationInterval = Math.round(this.obstacleInterval / 2);  // ≈ 22
         }
 
         // Adjust helicopter position proportionally if canvas size changed
