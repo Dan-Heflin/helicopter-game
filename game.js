@@ -818,16 +818,16 @@ class Game {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         
-        // Set canvas size based on device
+        // Set canvas size and base speed based on device
         const isMobile = window.innerWidth < 400;
         if (isMobile) {
             this.canvas.width = 400;
             this.canvas.height = 400;
-            this.scrollSpeed = 2;     // Slightly slower for mobile
+            this.scrollSpeed = 3;     // Increased from 2 to 3 to match desktop
         } else {
             this.canvas.width = 800;
             this.canvas.height = 400;
-            this.scrollSpeed = 3;
+            this.scrollSpeed = 3;     // Keep desktop speed the same
         }
         
         // Pass gameAudio when creating helicopter
@@ -947,7 +947,7 @@ class Game {
         if (isMobile) {
             this.canvas.width = 350;
             this.canvas.height = 400;
-            this.scrollSpeed = 2;
+            this.scrollSpeed = 3;    // Updated to match desktop speed
         } else {
             this.canvas.width = 800;
             this.canvas.height = 400;
