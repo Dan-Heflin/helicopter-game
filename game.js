@@ -822,14 +822,14 @@ class Game {
         const isMobile = window.innerWidth < 400;
         if (isMobile) {
             // Use larger virtual canvas size for gameplay
-            this.canvas.width = 600;  // Increased from window.innerWidth
-            this.canvas.height = 600; // Increased from window.innerHeight
+            this.canvas.width = 600;
+            this.canvas.height = 600;
             
             // Scale the canvas display using CSS
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
             
-            this.scrollSpeed = 3;
+            this.scrollSpeed = 4;
         } else {
             this.canvas.width = 800;
             this.canvas.height = 400;
@@ -959,7 +959,7 @@ class Game {
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
             
-            this.scrollSpeed = 3;
+            this.scrollSpeed = 4;
         } else {
             this.canvas.width = 800;
             this.canvas.height = 400;
