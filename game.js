@@ -826,16 +826,16 @@ class Game {
         const isMobile = window.innerWidth < 400;
         
         // Base obstacle distance we want to maintain (in pixels)
-        const targetObstacleDistance = 400;  // Reduced from 630 to 400
+        const targetObstacleDistance = 400;
         
         if (isMobile) {
             this.canvas.width = 600;
             this.canvas.height = 600;
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
-            this.scrollSpeed = 13.5;
-            this.obstacleInterval = Math.round(targetObstacleDistance / this.scrollSpeed);  // ≈ 30
-            this.bgFormationInterval = Math.round(this.obstacleInterval / 2);  // ≈ 15
+            this.scrollSpeed = 12;  // Reduced from 13.5
+            this.obstacleInterval = Math.round(targetObstacleDistance / this.scrollSpeed);  // ≈ 33
+            this.bgFormationInterval = Math.round(this.obstacleInterval / 2);  // ≈ 17
         } else {
             this.canvas.width = 800;
             this.canvas.height = 400;
@@ -961,7 +961,7 @@ class Game {
             this.canvas.height = 600;
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
-            this.scrollSpeed = 13.5;  // Match new mobile speed
+            this.scrollSpeed = 12;  // Match new mobile speed
         } else {
             this.canvas.width = 800;
             this.canvas.height = 400;
