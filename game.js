@@ -919,7 +919,7 @@ class Game {
             this.canvas.height = 600;
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
-            this.scrollSpeed = 4;  // Reduced from 7 to 4 for mobile
+            this.scrollSpeed = 4;  // Reduced to 4 for mobile
             
             // Recalculate intervals to maintain same distance as desktop
             // Desktop: 400px / 9 speed = 44.4 frames between obstacles
@@ -1051,11 +1051,22 @@ class Game {
             this.canvas.height = 600;
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
-            this.scrollSpeed = 4;  // Reduced from 7 to 4 for mobile
+            this.scrollSpeed = 4;  // Reduced to 4 for mobile
+            
+            // Also update the intervals when resizing
+            const targetObstacleDistance = 400;
+            const targetFramesBetweenObstacles = Math.round(targetObstacleDistance / 9);
+            this.obstacleInterval = targetFramesBetweenObstacles;
+            this.bgFormationInterval = Math.round(this.obstacleInterval / 2);
         } else {
             this.canvas.width = 800;
             this.canvas.height = 400;
             this.scrollSpeed = 9;
+            
+            // Update intervals for desktop
+            const targetObstacleDistance = 400;
+            this.obstacleInterval = Math.round(targetObstacleDistance / this.scrollSpeed);
+            this.bgFormationInterval = Math.round(this.obstacleInterval / 2);
         }
 
         // Adjust helicopter position proportionally if canvas size changed
