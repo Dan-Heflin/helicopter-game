@@ -1574,7 +1574,7 @@ class Game {
         // Create card-based options with block rating system
         optionsContainer.innerHTML = `
             <div class="helicopter-cards">
-                <div class="helicopter-card" data-type="scout">
+                <div class="helicopter-card selected" data-type="scout">
                     <div class="card-header">
                         <div class="card-image scout-image"></div>
                         <div class="card-title">
@@ -1639,6 +1639,10 @@ class Game {
                 document.getElementById('helicopterModal').style.display = 'none';
             });
         });
+        
+        // Set the default selected helicopter type to Scout
+        this.selectedHelicopterType = 'scout';
+        this.helicopter.setType('scout');
     }
 }
 
