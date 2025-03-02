@@ -236,7 +236,7 @@ class Helicopter {
         // without game-specific elements like rotor animation, hitbox, etc.
         
         // Set the helicopter color based on type
-        const bodyColor = this.type === 'heavy' ? '#8B4513' : '#4682B4';
+        const bodyColor = this.type === 'tanker' ? '#8B4513' : '#4682B4';
         
         // Draw helicopter body
         ctx.fillStyle = bodyColor;
@@ -288,6 +288,21 @@ class Helicopter {
         if (this.liftSound && this.gameAudio) {
             this.gameAudio.stopSound(this.liftSound);
             this.liftSound = null;
+        }
+    }
+
+    setType(type) {
+        this.type = type;
+        
+        // Update helicopter properties based on type
+        if (type === 'scout') {
+            this.bodyColor = '#4682B4'; // Steel blue
+            this.gravity = 0.25;
+            this.liftForce = -5;
+        } else if (type === 'tanker') {
+            this.bodyColor = '#8B4513'; // Saddle brown
+            this.gravity = 0.3;  // Heavier, falls faster
+            this.liftForce = -4.5;    // Less powerful lift
         }
     }
 }
@@ -1569,38 +1584,30 @@ class Game {
                     </div>
                     <div class="helicopter-stats">
                         <div class="stat-row">
-                            <span class="stat-label">Speed</span>
-                            ${generateBlockRating(4)}
+                            <span class="stat-label">Lift</span>
+                            ${generateBlockRating(3)}
                         </div>
                         <div class="stat-row">
-                            <span class="stat-label">Agility</span>
-                            ${generateBlockRating(5)}
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Fuel</span>
-                            ${generateBlockRating(2)}
+                            <span class="stat-label">Drop</span>
+                            ${generateBlockRating(3)}
                         </div>
                     </div>
                 </div>
-                <div class="helicopter-card" data-type="heavy">
+                <div class="helicopter-card" data-type="tanker">
                     <div class="card-header">
-                        <div class="card-image heavy-image"></div>
+                        <div class="card-image tanker-image"></div>
                         <div class="card-title">
-                            <h3>Heavy</h3>
+                            <h3>Tanker</h3>
                             <p>Sturdy & Efficient</p>
                         </div>
                     </div>
                     <div class="helicopter-stats">
                         <div class="stat-row">
-                            <span class="stat-label">Speed</span>
+                            <span class="stat-label">Lift</span>
                             ${generateBlockRating(2)}
                         </div>
                         <div class="stat-row">
-                            <span class="stat-label">Agility</span>
-                            ${generateBlockRating(1)}
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Fuel</span>
+                            <span class="stat-label">Drop</span>
                             ${generateBlockRating(5)}
                         </div>
                     </div>
@@ -1624,8 +1631,8 @@ class Game {
                 // Update helicopter type
                 if (type === 'scout') {
                     this.helicopter.setType('scout');
-                } else if (type === 'heavy') {
-                    this.helicopter.setType('heavy');
+                } else if (type === 'tanker') {
+                    this.helicopter.setType('tanker');
                 }
                 
                 // Close the modal
