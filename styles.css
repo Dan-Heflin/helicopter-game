@@ -100,29 +100,33 @@ body, html {
 /* Update the modal content to remove all width constraints */
 #helicopterModal .modal-content {
     background-color: #1a1a1a;
+    color: #fff;
     padding: 20px;
-    border-radius: 8px;
-    text-align: center;
-    border: 2px solid #2E8B57;
-    width: auto;
-    max-width: none;
-    min-width: 0;
-    display: inline-block;
+    border-radius: 10px;
+    max-width: 800px;
+    margin: 0 auto;
+    position: relative;
 }
 
+/* Add close icon styles */
+.close-icon {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close-icon:hover {
+    color: #fff;
+}
+
+/* Hide the old close button */
 .close-button {
-  background-color: #2E8B57;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 15px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  margin-top: 15px;
-}
-
-.close-button:hover {
-  background-color: #3aa76a;
+    display: none;
 }
 
 /* Add a new utility-button class */
@@ -851,7 +855,6 @@ body {
     display: flex;
     justify-content: center;
     gap: 20px;
-    margin-bottom: 20px;
 }
 
 #helicopterModal .helicopter-card {
@@ -966,9 +969,10 @@ body {
     object-fit: contain;
 }
 
-/* Placeholder images for helicopters */
-/* .scout-placeholder {
-    background-color: #4682B4; /* Steel blue */
+/* Removing all problematic commented code that has nested comments */
+/* 
+.scout-placeholder {
+    background-color: #4682B4; 
     position: relative;
     width: 100%;
     height: 100%;
@@ -986,22 +990,13 @@ body {
 }
 
 .tanker-placeholder {
-    background-color: #8B4513; /* Saddle brown */
+    background-color: #8B4513; 
     position: relative;
     width: 100%;
     height: 100%;
     border-radius: 5px;
 }
-
-.tanker-placeholder:after {
-    content: '🚁';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 30px;
-    color: white;
-} */
+*/
 
 /* Keep the original card image styles */
 #helicopterModal .card-image {

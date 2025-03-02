@@ -1521,7 +1521,27 @@ class Game {
 
     // Add populateHelicopterOptions to Game class
     populateHelicopterOptions() {
-        const optionsContainer = document.querySelector('.helicopter-options');
+        const modalContent = document.querySelector('#helicopterModal .modal-content');
+        if (!modalContent) return;
+        
+        // Add close icon if it doesn't exist
+        if (!modalContent.querySelector('.close-icon')) {
+            const closeIcon = document.createElement('span');
+            closeIcon.className = 'close-icon';
+            closeIcon.innerHTML = '&times;';
+            closeIcon.addEventListener('click', () => {
+                document.getElementById('helicopterModal').style.display = 'none';
+            });
+            modalContent.prepend(closeIcon);
+        }
+        
+        // Remove any existing close button
+        const closeButton = modalContent.querySelector('.close-button');
+        if (closeButton) {
+            closeButton.remove();
+        }
+        
+        const optionsContainer = modalContent.querySelector('.helicopter-options');
         if (!optionsContainer) return;
         
         // Clear existing options
@@ -1549,31 +1569,38 @@ class Game {
                     </div>
                     <div class="helicopter-stats">
                         <div class="stat-row">
-                            <span>Lift:</span>
-                            ${generateBlockRating(3)}
+                            <span class="stat-label">Speed</span>
+                            ${generateBlockRating(4)}
                         </div>
                         <div class="stat-row">
-                            <span>Drop:</span>
-                            ${generateBlockRating(3)}
+                            <span class="stat-label">Agility</span>
+                            ${generateBlockRating(5)}
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Fuel</span>
+                            ${generateBlockRating(2)}
                         </div>
                     </div>
                 </div>
-                
-                <div class="helicopter-card" data-type="tanker">
+                <div class="helicopter-card" data-type="heavy">
                     <div class="card-header">
                         <div class="card-image heavy-image"></div>
                         <div class="card-title">
-                            <h3>Tanker</h3>
-                            <p>Powerful & Durable</p>
+                            <h3>Heavy</h3>
+                            <p>Sturdy & Efficient</p>
                         </div>
                     </div>
                     <div class="helicopter-stats">
                         <div class="stat-row">
-                            <span>Lift:</span>
+                            <span class="stat-label">Speed</span>
                             ${generateBlockRating(2)}
                         </div>
                         <div class="stat-row">
-                            <span>Drop:</span>
+                            <span class="stat-label">Agility</span>
+                            ${generateBlockRating(1)}
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Fuel</span>
                             ${generateBlockRating(5)}
                         </div>
                     </div>
@@ -1581,24 +1608,30 @@ class Game {
             </div>
         `;
         
-        // Add click handlers to the options
-        document.querySelectorAll('.helicopter-card').forEach(card => {
+        // Add event listeners to helicopter cards
+        const helicopterCards = document.querySelectorAll('.helicopter-card');
+        helicopterCards.forEach(card => {
             card.addEventListener('click', () => {
-                document.querySelectorAll('.helicopter-card').forEach(el => {
-                    el.classList.remove('selected');
-                });
+                const type = card.getAttribute('data-type');
+                this.selectedHelicopterType = type;
+                
+                // Remove selected class from all cards
+                helicopterCards.forEach(c => c.classList.remove('selected'));
+                
+                // Add selected class to clicked card
                 card.classList.add('selected');
-                this.selectedHelicopterType = card.dataset.type;
+                
+                // Update helicopter type
+                if (type === 'scout') {
+                    this.helicopter.setType('scout');
+                } else if (type === 'heavy') {
+                    this.helicopter.setType('heavy');
+                }
+                
+                // Close the modal
+                document.getElementById('helicopterModal').style.display = 'none';
             });
         });
-        
-        // Select the current helicopter type if available
-        if (this.selectedHelicopterType) {
-            const selectedCard = document.querySelector(`.helicopter-card[data-type="${this.selectedHelicopterType}"]`);
-            if (selectedCard) {
-                selectedCard.classList.add('selected');
-            }
-        }
     }
 }
 
