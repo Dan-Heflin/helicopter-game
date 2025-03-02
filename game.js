@@ -231,6 +231,49 @@ class Helicopter {
         ctx.restore();
     }
 
+    drawBody(ctx) {
+        // This is a simplified version of the draw method that only draws the helicopter body
+        // without game-specific elements like rotor animation, hitbox, etc.
+        
+        // Set the helicopter color based on type
+        const bodyColor = this.type === 'heavy' ? '#8B4513' : '#4682B4';
+        
+        // Draw helicopter body
+        ctx.fillStyle = bodyColor;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 15, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw cockpit
+        ctx.fillStyle = '#ADD8E6';
+        ctx.beginPath();
+        ctx.ellipse(5, -2, 7, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw tail
+        ctx.fillStyle = bodyColor;
+        ctx.beginPath();
+        ctx.moveTo(-10, 0);
+        ctx.lineTo(-25, -5);
+        ctx.lineTo(-25, 5);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Draw rotor base
+        ctx.fillStyle = '#333';
+        ctx.beginPath();
+        ctx.arc(0, -8, 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw static rotor (not animated)
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-20, -8);
+        ctx.lineTo(20, -8);
+        ctx.stroke();
+    }
+
     lift() {
         this.isLifting = true;
         // Play helicopter sound when lifting
@@ -832,79 +875,6 @@ class GameAudio {
                 source.stop();
             } catch (error) {
                 console.error('Error stopping sound:', error);
-            }
-        }
-    }
-
-    // Add this method to populate the helicopter options in the modal
-    populateHelicopterOptions() {
-        const optionsContainer = document.querySelector('.helicopter-options');
-        if (!optionsContainer) return;
-        
-        // Clear existing options
-        optionsContainer.innerHTML = '';
-        
-        // Create card-based options with new layout
-        optionsContainer.innerHTML = `
-            <div class="helicopter-cards">
-                <div class="helicopter-card" data-type="scout">
-                    <div class="card-header">
-                        <div class="card-image scout-image"></div>
-                        <div class="card-title">
-                            <h3>Scout</h3>
-                            <p>Fast & Agile</p>
-                        </div>
-                    </div>
-                    <div class="helicopter-stats">
-                        <div class="stat-row">
-                            <span>Lift:</span>
-                            <div class="stat-value">★★★☆☆</div>
-                        </div>
-                        <div class="stat-row">
-                            <span>Drop:</span>
-                            <div class="stat-value">★★★☆☆</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="helicopter-card" data-type="heavy">
-                    <div class="card-header">
-                        <div class="card-image heavy-image"></div>
-                        <div class="card-title">
-                            <h3>Heavy</h3>
-                            <p>Powerful & Durable</p>
-                        </div>
-                    </div>
-                    <div class="helicopter-stats">
-                        <div class="stat-row">
-                            <span>Lift:</span>
-                            <div class="stat-value">★★☆☆☆</div>
-                        </div>
-                        <div class="stat-row">
-                            <span>Drop:</span>
-                            <div class="stat-value">★★★★★</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Add click handlers to the options
-        document.querySelectorAll('.helicopter-card').forEach(card => {
-            card.addEventListener('click', () => {
-                document.querySelectorAll('.helicopter-card').forEach(el => {
-                    el.classList.remove('selected');
-                });
-                card.classList.add('selected');
-                this.selectedHelicopterType = card.dataset.type;
-            });
-        });
-        
-        // Select the current helicopter type if available
-        if (this.selectedHelicopterType) {
-            const selectedCard = document.querySelector(`.helicopter-card[data-type="${this.selectedHelicopterType}"]`);
-            if (selectedCard) {
-                selectedCard.classList.add('selected');
             }
         }
     }
@@ -1536,9 +1506,20 @@ class Game {
                 }
             };
         }
+        
+        // Add click handler to close modal when clicking outside
+        if (modal) {
+            modal.addEventListener('click', (event) => {
+                // Check if the click was directly on the modal background
+                // (not on any of its children)
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
     }
 
-    // Add this method to populate the helicopter options in the modal
+    // Add populateHelicopterOptions to Game class
     populateHelicopterOptions() {
         const optionsContainer = document.querySelector('.helicopter-options');
         if (!optionsContainer) return;
@@ -1546,7 +1527,16 @@ class Game {
         // Clear existing options
         optionsContainer.innerHTML = '';
         
-        // Create card-based options with new layout
+        // Helper function to generate block ratings
+        const generateBlockRating = (rating) => {
+            let blocks = '';
+            for (let i = 1; i <= 5; i++) {
+                blocks += `<div class="stat-block ${i <= rating ? 'filled' : 'empty'}"></div>`;
+            }
+            return `<div class="stat-blocks">${blocks}</div>`;
+        };
+        
+        // Create card-based options with block rating system
         optionsContainer.innerHTML = `
             <div class="helicopter-cards">
                 <div class="helicopter-card" data-type="scout">
@@ -1560,31 +1550,31 @@ class Game {
                     <div class="helicopter-stats">
                         <div class="stat-row">
                             <span>Lift:</span>
-                            <div class="stat-value">★★★☆☆</div>
+                            ${generateBlockRating(3)}
                         </div>
                         <div class="stat-row">
                             <span>Drop:</span>
-                            <div class="stat-value">★★★☆☆</div>
+                            ${generateBlockRating(3)}
                         </div>
                     </div>
                 </div>
                 
-                <div class="helicopter-card" data-type="heavy">
+                <div class="helicopter-card" data-type="tanker">
                     <div class="card-header">
                         <div class="card-image heavy-image"></div>
                         <div class="card-title">
-                            <h3>Heavy</h3>
+                            <h3>Tanker</h3>
                             <p>Powerful & Durable</p>
                         </div>
                     </div>
                     <div class="helicopter-stats">
                         <div class="stat-row">
                             <span>Lift:</span>
-                            <div class="stat-value">★★☆☆☆</div>
+                            ${generateBlockRating(2)}
                         </div>
                         <div class="stat-row">
                             <span>Drop:</span>
-                            <div class="stat-value">★★★★★</div>
+                            ${generateBlockRating(5)}
                         </div>
                     </div>
                 </div>
