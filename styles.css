@@ -96,9 +96,8 @@ body, html {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Ensure the modal content is wide enough */
+/* Update the modal content to remove all width constraints */
 #helicopterModal .modal-content {
-    min-width: 420px;
     background-color: #1a1a1a;
     padding: 20px;
     border-radius: 8px;
@@ -364,7 +363,6 @@ body, html {
 
 /* Update the helicopter modal styles */
 #helicopterModal .modal-content {
-    min-width: 420px;
     background-color: #1a1a1a;
     padding: 20px;
     border-radius: 8px;
