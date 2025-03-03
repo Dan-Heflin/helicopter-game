@@ -53,8 +53,8 @@ class Helicopter {
         
         // Physics properties
         this.velocity = 0;
-        this.gravity = 0.2;
-        this.liftForce = -2.5;
+        this.gravity = 0.25; // Scout default
+        this.liftForce = -5; // Scout default
         this.maxLiftVelocity = 4;
         this.maxFallVelocity = 6;
         
@@ -63,13 +63,14 @@ class Helicopter {
         this.height = 20;
         
         // Visual properties
-        this.bodyColor = '#D3D3D3';  // Light gray
+        this.bodyColor = '#4682B4'; // Steel blue (Scout default)
         this.accentColor = '#FFD700'; // Bright yellow
         this.rotorColor = '#1A1A1A';  // Black
         this.rotorSpeed = 0.5;
         this.rotorAngle = 0;
         
         // State
+        this.type = 'scout'; // Set Scout as default type
         this.isLifting = false;
         this.particles = [];
         this.particleTimer = 0;
@@ -960,6 +961,8 @@ class Game {
         
         // Pass gameAudio when creating helicopter
         this.helicopter = new Helicopter(130, this.canvas.height / 2, this.canvas, this.gameAudio);
+        // Set the default selected helicopter type
+        this.selectedHelicopterType = 'scout';
         
         // Rest of constructor code...
         this.gameState = 'start';
@@ -1353,8 +1356,14 @@ class Game {
             this.helicopter.liftSound = null;
         }
         
-        // Create new helicopter without type parameter
+        // Store the current helicopter type before creating a new helicopter
+        const currentType = this.selectedHelicopterType || 'scout';
+        
+        // Create new helicopter
         this.helicopter = new Helicopter(130, this.canvas.height - 50, this.canvas, this.gameAudio);
+        
+        // Set the helicopter type to the previously selected type
+        this.helicopter.setType(currentType);
         
         this.helipad = new Helipad(this.canvas, 30);
         this.obstacles = [];
