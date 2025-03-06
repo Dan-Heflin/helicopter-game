@@ -1072,6 +1072,9 @@ class Game {
 
         // Set up helicopter button
         this.setupHelicopterButton();
+
+        // Create decorative elements for the home screen
+        this.createHomeScreenElements();
     }
 
     setupCanvasSize() {
@@ -1172,10 +1175,38 @@ class Game {
 
     // Then modify the update method to use this getter
     update() {
-        if (this.gameState === 'playing') {
-            // Get the current scroll speed
-            const currentScrollSpeed = this.getScrollSpeed();
+        // Get the current scroll speed for consistent movement
+        const currentScrollSpeed = this.getScrollSpeed();
+        
+        // Update ambient particles in all game states
+        this.ambientParticles.forEach(p => {
+            p.y -= p.speed;
+            if (p.y < 0) {
+                p.y = this.canvas.height;
+                p.x = Math.random() * this.canvas.width;
+            }
+        });
+        
+        if (this.gameState === 'start') {
+            // Update home screen background formations
+            this.homeBackgroundFormations.forEach(formation => {
+                formation.update(currentScrollSpeed * 0.5); // Slower movement for aesthetic effect
+            });
             
+            // Update home screen edge formations
+            this.homeEdgeFormationTop.update(currentScrollSpeed * 0.5);
+            this.homeEdgeFormationBottom.update(currentScrollSpeed * 0.5);
+            
+            // Update decorative helicopter (just for animation, no physics)
+            if (this.decorativeHelicopter) {
+                // Make the helicopter bob up and down slightly
+                this.decorativeHelicopter.y += Math.sin(Date.now() / 300) * 0.5;
+            }
+            
+            return;
+        }
+        
+        if (this.gameState === 'playing') {
             // Update background formations
             this.bgFormationTimer++;
             if (this.bgFormationTimer > this.bgFormationInterval) {
@@ -1262,8 +1293,18 @@ class Game {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
         if (this.gameState === 'start') {
+            // Draw home screen elements
+            this.drawHomeScreenElements();
+            
+            // Draw title and instructions
             this.ctx.fillStyle = this.textColor;
             this.ctx.textAlign = 'center';
+            
+            // Add a subtle text shadow
+            this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            this.ctx.shadowBlur = 5;
+            this.ctx.shadowOffsetX = 2;
+            this.ctx.shadowOffsetY = 2;
             
             this.ctx.font = '48px Arial';
             this.ctx.fillText('Helicopter Game', 
@@ -1276,6 +1317,12 @@ class Game {
                 this.canvas.width / 2, 
                 this.canvas.height / 2 + 20);
             
+            // Reset shadow
+            this.ctx.shadowColor = 'transparent';
+            this.ctx.shadowBlur = 0;
+            this.ctx.shadowOffsetX = 0;
+            this.ctx.shadowOffsetY = 0;
+            
             this.ctx.textAlign = 'left';
             return;
         }
@@ -1287,6 +1334,14 @@ class Game {
             // Draw edge formations
             this.edgeFormationTop.draw(this.ctx);
             this.edgeFormationBottom.draw(this.ctx);
+            
+            // Draw ambient particles
+            this.ambientParticles.forEach(p => {
+                this.ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                this.ctx.fill();
+            });
             
             // Draw helipad if it exists and is on screen
             if (this.helipad && !this.helipad.isOffScreen()) {
@@ -1385,6 +1440,9 @@ class Game {
         
         // Clear explosion particles
         this.explosionParticles = [];
+        
+        // Recreate home screen elements
+        this.createHomeScreenElements();
     }
 
     start() {
@@ -1593,7 +1651,7 @@ class Game {
         // Create card-based options with block rating system
         optionsContainer.innerHTML = `
             <div class="helicopter-cards">
-                <div class="helicopter-card selected" data-type="scout">
+                <div class="helicopter-card ${this.selectedHelicopterType === 'scout' ? 'selected active' : ''}" data-type="scout">
                     <div class="card-header">
                         <div class="card-image scout-image"></div>
                         <div class="card-title">
@@ -1612,7 +1670,7 @@ class Game {
                         </div>
                     </div>
                 </div>
-                <div class="helicopter-card" data-type="tanker">
+                <div class="helicopter-card ${this.selectedHelicopterType === 'tanker' ? 'selected active' : ''}" data-type="tanker">
                     <div class="card-header">
                         <div class="card-image tanker-image"></div>
                         <div class="card-title">
@@ -1641,11 +1699,15 @@ class Game {
                 const type = card.getAttribute('data-type');
                 this.selectedHelicopterType = type;
                 
-                // Remove selected class from all cards
-                helicopterCards.forEach(c => c.classList.remove('selected'));
+                // Remove selected and active classes from all cards
+                helicopterCards.forEach(c => {
+                    c.classList.remove('selected');
+                    c.classList.remove('active');
+                });
                 
-                // Add selected class to clicked card
+                // Add selected and active classes to clicked card
                 card.classList.add('selected');
+                card.classList.add('active');
                 
                 // Update helicopter type
                 if (type === 'scout') {
@@ -1659,9 +1721,98 @@ class Game {
             });
         });
         
-        // Set the default selected helicopter type to Scout
-        this.selectedHelicopterType = 'scout';
-        this.helicopter.setType('scout');
+        // If no helicopter type is selected yet, set the default to Scout
+        if (!this.selectedHelicopterType) {
+            this.selectedHelicopterType = 'scout';
+            this.helicopter.setType('scout');
+        }
+    }
+
+    // Create decorative elements for the home screen
+    createHomeScreenElements() {
+        // Create background formations similar to the game
+        this.homeBackgroundFormations = [];
+        for (let i = 0; i < 3; i++) {
+            this.homeBackgroundFormations.push(new BackgroundFormation(this.canvas));
+        }
+        
+        // Create edge formations for top and bottom
+        this.homeEdgeFormationTop = new EdgeFormation(this.canvas, true);
+        this.homeEdgeFormationBottom = new EdgeFormation(this.canvas, false);
+        
+        // Create a decorative helicopter using the actual helicopter class
+        // Position it in the center of the screen
+        this.decorativeHelicopter = new Helicopter(
+            this.canvas.width * 0.2, 
+            this.canvas.height * 0.5, 
+            this.canvas,
+            this.gameAudio
+        );
+        
+        // Set the helicopter type based on the selected type or default to scout
+        this.decorativeHelicopter.setType(this.selectedHelicopterType || 'scout');
+        
+        // Create ambient particles for the home screen
+        this.createAmbientParticles();
+    }
+    
+    // Create ambient particles for visual effect
+    createAmbientParticles() {
+        this.ambientParticles = [];
+        for (let i = 0; i < 20; i++) {
+            this.ambientParticles.push({
+                x: Math.random() * this.canvas.width,
+                y: Math.random() * this.canvas.height,
+                size: 1 + Math.random() * 2,
+                speed: 0.2 + Math.random() * 0.5,
+                opacity: 0.2 + Math.random() * 0.3
+            });
+        }
+    }
+    
+    // Draw home screen decorative elements
+    drawHomeScreenElements() {
+        // Fill background with game's background color
+        this.ctx.fillStyle = '#1a1a1a';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Draw background formations
+        this.homeBackgroundFormations.forEach(formation => formation.draw(this.ctx));
+        
+        // Draw edge formations
+        this.homeEdgeFormationTop.draw(this.ctx);
+        this.homeEdgeFormationBottom.draw(this.ctx);
+        
+        // Draw ambient particles
+        this.ambientParticles.forEach(p => {
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
+            this.ctx.beginPath();
+            this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            this.ctx.fill();
+            
+            // Move particles upward slowly
+            p.y -= p.speed;
+            
+            // Reset particles that go off screen
+            if (p.y < 0) {
+                p.y = this.canvas.height;
+                p.x = Math.random() * this.canvas.width;
+            }
+        });
+        
+        // Draw the decorative helicopter
+        // Make the rotor spin even when not lifting, but don't play sound
+        const originalLift = this.decorativeHelicopter.lift;
+        this.decorativeHelicopter.lift = function() {
+            this.isLifting = true;
+            // Don't play sound in this case
+        };
+        
+        this.decorativeHelicopter.isLifting = true;
+        this.decorativeHelicopter.draw(this.ctx);
+        
+        // Restore original lift method
+        this.decorativeHelicopter.lift = originalLift;
     }
 }
 
