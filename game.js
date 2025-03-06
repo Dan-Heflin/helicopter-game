@@ -300,7 +300,7 @@ class Helicopter {
             this.bodyColor = '#4682B4'; // Steel blue
             this.gravity = 0.20;
             this.liftForce = -4;
-            this.maxLiftVelocity = 5;  // Standard max lift velocity
+            this.maxLiftVelocity = 4;  // Standard max lift velocity
         } else if (type === 'tanker') {
             this.bodyColor = '#8B4513'; // Saddle brown
             this.gravity = 0.35;  // Heavier, falls faster (5/5 drop rating)
