@@ -298,12 +298,14 @@ class Helicopter {
         // Update helicopter properties based on type
         if (type === 'scout') {
             this.bodyColor = '#4682B4'; // Steel blue
-            this.gravity = 0.25;
-            this.liftForce = -5;
+            this.gravity = 0.20;
+            this.liftForce = -4;
+            this.maxLiftVelocity = 5;  // Standard max lift velocity
         } else if (type === 'tanker') {
             this.bodyColor = '#8B4513'; // Saddle brown
-            this.gravity = 0.3;  // Heavier, falls faster
-            this.liftForce = -4.5;    // Less powerful lift
+            this.gravity = 0.35;  // Heavier, falls faster (5/5 drop rating)
+            this.liftForce = -3;  // Improved lift force but still weaker than Scout (2/5 lift rating)
+            this.maxLiftVelocity = 7;  // Lower max lift velocity to maintain character
         }
     }
 }
@@ -1244,6 +1246,14 @@ class Game {
             // Update helipad if it exists
             if (this.helipad && !this.helipad.isOffScreen()) {
                 this.helipad.update(currentScrollSpeed);
+            }
+            
+            // Update explosion particles
+            for (let i = this.explosionParticles.length - 1; i >= 0; i--) {
+                this.explosionParticles[i].update();
+                if (this.explosionParticles[i].opacity <= 0) {
+                    this.explosionParticles.splice(i, 1);
+                }
             }
         }
     }
