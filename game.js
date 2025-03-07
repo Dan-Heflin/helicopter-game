@@ -975,6 +975,10 @@ class Game {
         this.obstacles = [];
         this.obstacleTimer = 0;
         
+        // Add flag to track space key state
+        this.isSpaceKeyDown = false;
+        this.waitForSpaceRelease = false;
+        
         // Load leaderboard after initialization
         this.loadLeaderboard();
         
@@ -984,6 +988,8 @@ class Game {
         // Update event listeners
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
+                this.isSpaceKeyDown = true;
+                
                 if (this.gameState === 'start') {
                     this.gameState = 'takeoff';
                     this.helicopter.y = this.canvas.height - 50; // Adjusted height to match raised helipad
@@ -991,9 +997,12 @@ class Game {
                     this.gameState = 'playing';
                     this.helicopter.lift();
                 } else if (this.gameState === 'gameover') {
-                    this.reset();
-                    this.gameState = 'takeoff';
-                    this.helicopter.y = this.canvas.height - 50; // Adjusted height to match raised helipad
+                    // Only restart if we're not waiting for space release
+                    if (!this.waitForSpaceRelease) {
+                        this.reset();
+                        this.gameState = 'takeoff';
+                        this.helicopter.y = this.canvas.height - 50; // Adjusted height to match raised helipad
+                    }
                 } else {
                     this.helicopter.lift();
                 }
@@ -1002,6 +1011,8 @@ class Game {
 
         document.addEventListener('keyup', (e) => {
             if (e.code === 'Space') {
+                this.isSpaceKeyDown = false;
+                this.waitForSpaceRelease = false; // Reset the wait flag when space is released
                 this.helicopter.stopLift();
             }
         });
@@ -1009,6 +1020,10 @@ class Game {
         // Prevent default touch behaviors
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
+            
+            // Track touch state similar to space key
+            this.isSpaceKeyDown = true;
+            
             if (this.gameState === 'start') {
                 this.gameState = 'takeoff';
                 this.helicopter.y = this.canvas.height - 50;
@@ -1016,9 +1031,12 @@ class Game {
                 this.gameState = 'playing';
                 this.helicopter.lift();
             } else if (this.gameState === 'gameover') {
-                this.reset();
-                this.gameState = 'takeoff';
-                this.helicopter.y = this.canvas.height - 50;
+                // Only restart if we're not waiting for touch release
+                if (!this.waitForSpaceRelease) {
+                    this.reset();
+                    this.gameState = 'takeoff';
+                    this.helicopter.y = this.canvas.height - 50;
+                }
             } else {
                 this.helicopter.lift();
             }
@@ -1026,6 +1044,11 @@ class Game {
 
         this.canvas.addEventListener('touchend', (e) => {
             e.preventDefault();
+            
+            // Reset touch state similar to space key
+            this.isSpaceKeyDown = false;
+            this.waitForSpaceRelease = false;
+            
             this.helicopter.stopLift();
         }, { passive: false });
 
@@ -1450,7 +1473,17 @@ class Game {
     }
 
     updateLeaderboardDisplay() {
-        this.leaderboardElement.innerHTML = this.leaderboard
+        // Add header row
+        let leaderboardHTML = `
+            <div class="score-entry header">
+                <span>Pilot</span>
+                <span class="helicopter-type">Type</span>
+                <span>Score</span>
+            </div>
+        `;
+        
+        // Add entries
+        leaderboardHTML += this.leaderboard
             .map((entry, index) => {
                 let position;
                 switch(index) {
@@ -1466,13 +1499,20 @@ class Game {
                     default:
                         position = `${index + 1}.`;
                 }
+                
+                // Use a default value if helicopterType is not available (for backward compatibility)
+                const helicopterType = entry.helicopterType || '---';
+                
                 return `
                     <div class="score-entry">
                         <span>${position} ${entry.initials}</span>
+                        <span class="helicopter-type">${helicopterType}</span>
                         <span>${entry.score.toString().padStart(6, '0')}</span>
                     </div>
                 `;
             }).join('');
+            
+        this.leaderboardElement.innerHTML = leaderboardHTML;
     }
 
     loadLeaderboard() {
@@ -1512,12 +1552,16 @@ class Game {
             const handleSubmit = () => {
                 let initials = input.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) || 'AAA';
                 
+                // Capitalize first letter of helicopter type for display
+                const helicopterType = this.selectedHelicopterType.charAt(0).toUpperCase() + this.selectedHelicopterType.slice(1);
+                
                 // Add new score to Firebase
                 const newScoreRef = this.database.ref('leaderboard').push();
                 newScoreRef.set({
                     initials: initials,
                     score: currentScore,
-                    date: new Date().toLocaleDateString()
+                    date: new Date().toLocaleDateString(),
+                    helicopterType: helicopterType // Add helicopter type to the entry
                 }).then(() => {
                     // Reload leaderboard after adding new score
                     this.loadLeaderboard();
@@ -1552,6 +1596,11 @@ class Game {
     handleCollision() {
         this.gameState = 'gameover';
         this.isGameOver = true;
+        
+        // Set flag to wait for space release if space is currently down
+        if (this.isSpaceKeyDown) {
+            this.waitForSpaceRelease = true;
+        }
         
         // Play crash sound first
         this.gameAudio.play('crash');
@@ -1632,6 +1681,14 @@ class Game {
         if (closeButton) {
             closeButton.remove();
         }
+        
+        // Add or update title
+        let titleElement = modalContent.querySelector('h3');
+        if (!titleElement) {
+            titleElement = document.createElement('h3');
+            modalContent.insertBefore(titleElement, modalContent.firstChild);
+        }
+        titleElement.textContent = 'Choose Your Helicopter';
         
         const optionsContainer = modalContent.querySelector('.helicopter-options');
         if (!optionsContainer) return;

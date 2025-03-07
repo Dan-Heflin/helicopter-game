@@ -49,10 +49,11 @@ body {
 .audio-controls {
   position: absolute;
   bottom: 10px;
-  left: 10px;
+  right: 10px;
   display: flex;
   align-items: end;
   z-index: 100;
+  flex-direction: row-reverse;
 }
 
 .volume-slider {
@@ -101,7 +102,8 @@ body {
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s;
-  margin-right: 8px;
+  margin-right: 0;
+  margin-left: 8px;
 }
 
 .utility-button:hover {
@@ -159,7 +161,7 @@ body {
     border-radius: 5px;
     min-width: 300px;
     width: 100%;
-    max-width: 300px;
+    max-width: 350px;
     font-size: 14px;
 }
 
@@ -176,10 +178,39 @@ body {
     font-size: 16px;
 }
 
+/* Style for the header row */
+.score-entry.header {
+    font-weight: bold;
+    border-bottom: 1px solid #2E8B57;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+    color: #2E8B57;
+}
+
+/* Style for the helicopter type column */
+.helicopter-type {
+    text-align: center;
+    min-width: 70px;
+    font-size: 14px;
+}
+
+.score-entry span {
+    flex: 1;
+}
+
+.score-entry span:first-child {
+    flex: 1.2;
+    text-align: left;
+}
+
+.score-entry span:last-child {
+    flex: 0.8;
+    text-align: right;
+}
+
 .leaderboard-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    justify-content: center;
     margin-bottom: 15px;
 }
 
@@ -421,6 +452,7 @@ body {
     justify-content: center;
     align-items: center;
     text-align: center;
+    overflow-y: auto; /* Allow scrolling if needed */
 }
 
 #helicopterModal.active {
@@ -430,34 +462,40 @@ body {
 #helicopterModal .helicopter-options {
     display: flex;
     justify-content: center;
-    margin: 20px 0, 0, 0;
+    margin: 15px 0 0 0;
     width: 100%;
 }
 
 #helicopterModal .modal-content {
     background-color: #1a1a1a;
     color: #fff;
-    padding: 20px;
+    padding: 15px;
     border-radius: 10px;
-    max-width: 800px;
-    margin: 0 auto;
+    max-width: 550px;
+    width: auto;
+    min-width: 320px;
+    margin: 20px auto;
     position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 #helicopterModal .helicopter-cards {
     display: flex;
     justify-content: center;
-    gap: 20px;
+    gap: 15px;
+    flex-wrap: wrap;
 }
 
 #helicopterModal .helicopter-card {
-    width: 250px;
+    width: 185px;
     background-color: rgba(0, 0, 0, 0.7);
     border: 2px solid #444;
     border-radius: 10px;
-    padding: 15px;
+    padding: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
+    margin-bottom: 12px;
 }
 
 #helicopterModal .helicopter-card:hover {
@@ -489,13 +527,13 @@ body {
 #helicopterModal .card-header {
     display: flex;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
 }
 
 #helicopterModal .card-image {
-    width: 80px;
-    height: 80px;
-    margin-right: 15px;
+    width: 70px;
+    height: 70px;
+    margin-right: 12px;
     margin-bottom: 0;
     background-color: #2c2c2c;
     border-radius: 5px;
@@ -509,7 +547,7 @@ body {
 #helicopterModal .helicopter-stats {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 #helicopterModal .stat-row {
@@ -523,7 +561,35 @@ body {
     min-width: 40px;
 }
 
+#helicopterModal h3 {
+    margin-top: 5px;
+    margin-bottom: 10px;
+}
+
 /* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+    #helicopterModal .modal-content {
+        width: auto;
+        max-width: 430px;
+        padding: 15px;
+    }
+    
+    #helicopterModal .helicopter-card {
+        width: 100%;
+        max-width: 200px;
+        padding: 10px;
+    }
+    
+    #helicopterModal .helicopter-cards {
+        gap: 15px;
+    }
+    
+    #helicopterModal .card-image {
+        width: 60px;
+        height: 60px;
+    }
+}
+
 @media (max-width: 400px) {
     canvas {
         width: 100%;
@@ -538,5 +604,149 @@ body {
     
     .helicopter-card {
         width: 100%;
+    }
+    
+    /* Adjust leaderboard for mobile */
+    #leaderboard {
+        padding: 15px;
+        max-width: 100%;
+        font-size: 13px;
+    }
+    
+    .score-entry {
+        font-size: 14px;
+    }
+    
+    .helicopter-type {
+        min-width: 60px;
+        font-size: 13px;
+    }
+    
+    /* Adjust audio controls for mobile */
+    .audio-controls {
+        bottom: 5px;
+        right: 5px;
+    }
+    
+    .volume-slider {
+        width: 60px;
+    }
+    
+    .utility-button {
+        width: 28px;
+        height: 28px;
+        font-size: 16px;
+        padding: 5px;
+        margin-left: 5px;
+    }
+    
+    /* Helicopter modal styles for mobile */
+    #helicopterModal .modal-content {
+        width: auto;
+        min-width: 280px;
+        max-width: 360px;
+        padding: 10px;
+        margin: 10px auto;
+    }
+    
+    #helicopterModal .helicopter-cards {
+        justify-content: center;
+        gap: 6px;
+    }
+    
+    #helicopterModal .helicopter-card {
+        padding: 8px;
+        width: 160px; /* Fixed specific width */
+        max-width: 160px;
+        margin-bottom: 8px;
+    }
+    
+    /* Horizontal layout for card header on mobile */
+    #helicopterModal .card-header {
+        flex-direction: row;
+        text-align: left;
+        align-items: center;
+    }
+    
+    #helicopterModal .card-image {
+        width: 45px;
+        height: 45px;
+        margin-right: 8px;
+        margin-bottom: 0;
+    }
+    
+    #helicopterModal .card-title h3 {
+        font-size: 16px;
+        margin: 0 0 5px 0;
+    }
+    
+    #helicopterModal .card-title p {
+        font-size: 12px;
+        margin: 0;
+    }
+    
+    #helicopterModal .helicopter-stats {
+        margin-top: 8px;
+    }
+    
+    #helicopterModal .stat-row {
+        justify-content: space-between;
+        margin-top: 3px;
+    }
+    
+    #helicopterModal .stat-blocks {
+        gap: 2px;
+    }
+    
+    #helicopterModal .stat-block {
+        width: 10px;
+        height: 10px;
+    }
+    
+    #helicopterModal h3 {
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+}
+
+/* Compact styles for the helicopter cards */
+@media (max-width: 480px) {
+    #helicopterModal .modal-content {
+        padding: 12px;
+        width: 95%;
+        min-width: 280px;
+    }
+    
+    #helicopterModal .helicopter-card {
+        padding: 8px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        max-width: 180px;
+    }
+    
+    #helicopterModal .helicopter-options {
+        margin-top: 8px;
+    }
+    
+    #helicopterModal .card-header {
+        margin-bottom: 8px;
+    }
+    
+    #helicopterModal .stat-row {
+        margin-top: 2px;
+    }
+    
+    #helicopterModal .stat-label {
+        font-size: 12px;
+    }
+    
+    #helicopterModal .close-icon {
+        top: 5px;
+        right: 8px;
+        font-size: 22px;
+    }
+    
+    #helicopterModal .helicopter-cards {
+        gap: 8px;
     }
 } 
