@@ -5,10 +5,19 @@ class HelicopterScout extends BaseHelicopter {
         super(x, y, canvas, gameAudio);
         
         // Visual properties specific to Scout
-        this.bodyColor = '#D3D3D3';  // Light gray
+        this.bodyColor = '#4682B4';  // Steel blue
         this.accentColor = '#FFD700'; // Bright yellow
         this.rotorColor = '#1A1A1A';  // Black
         this.rotorSpeed = 0.5;        // Faster rotor
+        this.rotorAngle = 0;          // Initialize rotor angle
+    }
+    
+    update() {
+        // Call the parent update method
+        super.update();
+        
+        // Update rotor angle
+        this.rotorAngle += this.rotorSpeed;
     }
 
     draw(ctx) {
@@ -113,11 +122,11 @@ class HelicopterScout extends BaseHelicopter {
 
         // Main rotor with motion blur effect
         ctx.save();
-        ctx.translate(this.x + 20, this.y);
+        ctx.translate(this.x + 15, this.y + 2);
         
         // Draw multiple rotor blades for blur effect
-        for (let i = 0; i < 3; i++) {
-            ctx.rotate(this.forceRotorUpdate() / 50 + i * (Math.PI * 2 / 3));  // Use forceRotorUpdate
+        for (let i = 0; i < 2; i++) {
+            ctx.rotate(this.rotorAngle + i * Math.PI);
             ctx.strokeStyle = `rgba(26, 26, 26, ${0.8 - i * 0.2})`;
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -125,6 +134,12 @@ class HelicopterScout extends BaseHelicopter {
             ctx.lineTo(25, 0);
             ctx.stroke();
         }
+        
+        // Rotor hub
+        ctx.fillStyle = this.rotorColor;
+        ctx.beginPath();
+        ctx.arc(0, 0, 2, 0, Math.PI * 2);
+        ctx.fill();
         ctx.restore();
         
         ctx.restore();

@@ -6,7 +6,7 @@ class HelicopterTanker extends BaseHelicopter {
         
         // Adjust physics for tanker helicopter
         this.gravity = 0.3;  // Heavier, falls faster
-        this.lift = -4.5;    // Less powerful lift
+        this.liftForce = -4.5;    // Less powerful lift
         
         // Size - make it larger and more imposing
         this.width = 70;
@@ -17,60 +17,90 @@ class HelicopterTanker extends BaseHelicopter {
         this.accentColor = '#FF0000'; // Red for warning lights
         this.rotorColor = '#1a1a1a'; // Black rotors
         this.rotorSpeed = 0.3; // Slower rotor speed for heavier feel
+        this.rotorAngle = 0; // Initialize rotor angle
+    }
+    
+    update() {
+        // Call the parent update method
+        super.update();
+        
+        // Update rotor angle
+        this.rotorAngle += this.rotorSpeed;
     }
 
     draw(ctx) {
         ctx.save();
-        ctx.translate(this.x, this.y);
         
-        // Draw main body - chunky rectangular shape, wider in the middle
+        // Draw particles
+        this.particles.forEach(particle => particle.draw(ctx));
+        
+        // Main body - chunky rectangular shape
         ctx.fillStyle = this.bodyColor;
         ctx.beginPath();
-        ctx.moveTo(-30, -8);  // Top left
-        ctx.lineTo(20, -10);  // Top right
-        ctx.lineTo(25, 0);    // Middle right
-        ctx.lineTo(20, 10);   // Bottom right
-        ctx.lineTo(-30, 8);   // Bottom left
-        ctx.closePath();
+        ctx.rect(this.x - 15, this.y + this.height/2 - 10, 50, 20);
+        ctx.fill();
+        
+        // Cargo compartment on top
+        ctx.fillStyle = this.bodyColor;
+        ctx.beginPath();
+        ctx.rect(this.x - 5, this.y + this.height/2 - 20, 30, 10);
         ctx.fill();
         
         // Draw cockpit - smaller, more armored looking
         ctx.fillStyle = '#ADD8E6';
         ctx.beginPath();
-        ctx.ellipse(10, -2, 8, 5, 0, 0, Math.PI * 2);
+        ctx.rect(this.x + 20, this.y + this.height/2 - 7, 15, 14);
         ctx.fill();
         
         // Draw tail - longer and thicker
         ctx.fillStyle = this.bodyColor;
         ctx.beginPath();
-        ctx.moveTo(-30, 0);
-        ctx.lineTo(-45, -5);
-        ctx.lineTo(-45, 5);
+        ctx.moveTo(this.x - 15, this.y + this.height/2);
+        ctx.lineTo(this.x - 45, this.y + this.height/2 - 5);
+        ctx.lineTo(this.x - 45, this.y + this.height/2 + 5);
         ctx.closePath();
         ctx.fill();
         
         // Draw tail rotor - blocky
         ctx.fillStyle = this.rotorColor;
-        ctx.fillRect(-48, -7, 3, 14);
+        ctx.fillRect(this.x - 48, this.y + this.height/2 - 7, 3, 14);
         
         // Draw red warning lights
         ctx.fillStyle = this.accentColor;
         // Top warning light
         ctx.beginPath();
-        ctx.arc(0, -10, 2, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y + this.height/2 - 10, 2, 0, Math.PI * 2);
         ctx.fill();
         // Bottom warning light
         ctx.beginPath();
-        ctx.arc(0, 10, 2, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y + this.height/2 + 10, 2, 0, Math.PI * 2);
         ctx.fill();
         // Tail warning light
         ctx.beginPath();
-        ctx.arc(-40, -5, 1.5, 0, Math.PI * 2);
+        ctx.arc(this.x - 40, this.y + this.height/2 - 5, 1.5, 0, Math.PI * 2);
         ctx.fill();
+        
+        // Landing skids (thicker, more industrial)
+        ctx.strokeStyle = '#333333';
+        ctx.lineWidth = 2.5;
+        
+        // Front skid
+        ctx.beginPath();
+        ctx.moveTo(this.x + 25, this.y + this.height/2 + 10);
+        ctx.lineTo(this.x + 25, this.y + this.height/2 + 15);
+        ctx.lineTo(this.x + 5, this.y + this.height/2 + 15);
+        ctx.stroke();
+        
+        // Rear skid
+        ctx.beginPath();
+        ctx.moveTo(this.x - 5, this.y + this.height/2 + 10);
+        ctx.lineTo(this.x - 5, this.y + this.height/2 + 15);
+        ctx.lineTo(this.x - 25, this.y + this.height/2 + 15);
+        ctx.stroke();
         
         // Draw main rotor
         ctx.save();
-        ctx.translate(0, -10);
+        ctx.translate(this.x + 10, this.y + this.height/2 - 20);
         
         // Rotor shaft - thicker
         ctx.fillStyle = this.rotorColor;
