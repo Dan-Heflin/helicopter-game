@@ -96,8 +96,11 @@ class Helicopter {
         
         this.y += this.velocity;
 
-        if (this.y > this.canvas.height - this.height) {
-            this.y = this.canvas.height - this.height;
+        // Apply vertical offset if it exists (for different helicopter types)
+        const effectiveHeight = this.height + (this.verticalOffset || 0);
+        
+        if (this.y > this.canvas.height - effectiveHeight) {
+            this.y = this.canvas.height - effectiveHeight;
             this.velocity = 0;
         }
         if (this.y < 0) {
@@ -130,105 +133,319 @@ class Helicopter {
         // Draw particles
         this.particles.forEach(particle => particle.draw(ctx));
         
-        // Main body (sleek teardrop shape)
-        ctx.fillStyle = this.bodyColor;
-        ctx.beginPath();
-        ctx.moveTo(this.x + 40, this.y + this.height/2);  // Nose
-        ctx.quadraticCurveTo(
-            this.x + 45, this.y + this.height/2,  // Control point
-            this.x + 42, this.y + this.height/2 + 4  // End point
-        );
-        ctx.lineTo(this.x + 10, this.y + this.height - 2);  // Bottom curve
-        ctx.lineTo(this.x - 5, this.y + this.height/2 + 2);  // Tail bottom
-        ctx.lineTo(this.x - 5, this.y + this.height/2 - 2);  // Tail top
-        ctx.lineTo(this.x + 10, this.y + 2);  // Top curve
-        ctx.closePath();
-        ctx.fill();
-
-        // Tail boom (longer and slightly thicker)
-        ctx.fillStyle = this.bodyColor;
-        ctx.fillRect(this.x - 20, this.y + this.height/2 - 1.5, 18, 3);
-
-        // Tail fin (vertical stabilizer)
-        ctx.beginPath();
-        ctx.moveTo(this.x - 20, this.y + this.height/2 - 6);  // Top
-        ctx.lineTo(this.x - 20, this.y + this.height/2 + 6);  // Bottom
-        ctx.lineTo(this.x - 23, this.y + this.height/2);      // Back point
-        ctx.closePath();
-        ctx.fill();
-
-        // Tail rotor with motion blur effect
-        ctx.save();
-        ctx.translate(this.x - 20, this.y + this.height/2);
-        ctx.rotate(Date.now() / 100);
-        
-        // Draw multiple tail rotor lines for blur effect
-        for (let i = 0; i < 2; i++) {
-            ctx.rotate(Math.PI / 2);
-            ctx.strokeStyle = `rgba(26, 26, 26, ${0.7 - i * 0.3})`;
-            ctx.lineWidth = 1.5;
+        if (this.type === 'scout') {
+            // SCOUT HELICOPTER - Sleek, aerodynamic design
+            
+            // Main body (sleek teardrop shape)
+            ctx.fillStyle = this.bodyColor;
             ctx.beginPath();
-            ctx.moveTo(-5, 0);
-            ctx.lineTo(5, 0);
-            ctx.stroke();
-        }
-        ctx.restore();
+            ctx.moveTo(this.x + 40, this.y + this.height/2);  // Nose
+            ctx.quadraticCurveTo(
+                this.x + 45, this.y + this.height/2,  // Control point
+                this.x + 42, this.y + this.height/2 + 4  // End point
+            );
+            ctx.lineTo(this.x + 10, this.y + this.height - 2);  // Bottom curve
+            ctx.lineTo(this.x - 5, this.y + this.height/2 + 2);  // Tail bottom
+            ctx.lineTo(this.x - 5, this.y + this.height/2 - 2);  // Tail top
+            ctx.lineTo(this.x + 10, this.y + 2);  // Top curve
+            ctx.closePath();
+            ctx.fill();
 
-        // Yellow accent stripe
-        ctx.fillStyle = this.accentColor;
-        ctx.beginPath();
-        ctx.moveTo(this.x + 38, this.y + this.height/2);
-        ctx.lineTo(this.x, this.y + this.height/2);
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = this.accentColor;
-        ctx.stroke();
+            // Tail boom (longer and slightly thicker)
+            ctx.fillStyle = this.bodyColor;
+            ctx.fillRect(this.x - 20, this.y + this.height/2 - 1.5, 18, 3);
 
-        // Cockpit window
-        const windowGradient = ctx.createLinearGradient(
-            this.x + 25, this.y + 4,
-            this.x + 25, this.y + this.height - 4
-        );
-        windowGradient.addColorStop(0, 'rgba(135, 206, 235, 0.9)');
-        windowGradient.addColorStop(1, 'rgba(135, 206, 235, 0.6)');
-        
-        ctx.fillStyle = windowGradient;
-        ctx.beginPath();
-        ctx.moveTo(this.x + 35, this.y + this.height/2);
-        ctx.quadraticCurveTo(
-            this.x + 30, this.y + 4,
-            this.x + 20, this.y + 6
-        );
-        ctx.lineTo(this.x + 15, this.y + this.height/2 - 2);
-        ctx.quadraticCurveTo(
-            this.x + 25, this.y + this.height - 4,
-            this.x + 35, this.y + this.height/2
-        );
-        ctx.fill();
+            // Tail fin (vertical stabilizer)
+            ctx.beginPath();
+            ctx.moveTo(this.x - 20, this.y + this.height/2 - 6);  // Top
+            ctx.lineTo(this.x - 20, this.y + this.height/2 + 6);  // Bottom
+            ctx.lineTo(this.x - 23, this.y + this.height/2);      // Back point
+            ctx.closePath();
+            ctx.fill();
 
-        // Main rotor
-        this.rotorAngle += this.rotorSpeed;
-        ctx.save();
-        ctx.translate(this.x + 15, this.y + 2);
-        ctx.rotate(this.rotorAngle);
-        
-        // Rotor blades with motion blur
-        for (let i = 0; i < 2; i++) {
-            ctx.rotate(Math.PI);
-            ctx.strokeStyle = `rgba(26, 26, 26, ${0.7 - i * 0.3})`;
+            // Tail rotor with motion blur effect
+            ctx.save();
+            ctx.translate(this.x - 20, this.y + this.height/2);
+            ctx.rotate(Date.now() / 100);
+            
+            // Draw multiple tail rotor lines for blur effect
+            for (let i = 0; i < 2; i++) {
+                ctx.rotate(Math.PI / 2);
+                ctx.strokeStyle = `rgba(26, 26, 26, ${0.7 - i * 0.3})`;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(-5, 0);
+                ctx.lineTo(5, 0);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Yellow accent stripe
+            ctx.fillStyle = this.accentColor;
+            ctx.beginPath();
+            ctx.moveTo(this.x + 38, this.y + this.height/2);
+            ctx.lineTo(this.x, this.y + this.height/2);
             ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(this.width/2, 0);
+            ctx.strokeStyle = this.accentColor;
             ctx.stroke();
+
+            // Cockpit window
+            const windowGradient = ctx.createLinearGradient(
+                this.x + 25, this.y + 4,
+                this.x + 25, this.y + this.height - 4
+            );
+            windowGradient.addColorStop(0, 'rgba(135, 206, 235, 0.9)');
+            windowGradient.addColorStop(1, 'rgba(135, 206, 235, 0.6)');
+            
+            ctx.fillStyle = windowGradient;
+            ctx.beginPath();
+            ctx.moveTo(this.x + 35, this.y + this.height/2);
+            ctx.quadraticCurveTo(
+                this.x + 30, this.y + 4,
+                this.x + 20, this.y + 6
+            );
+            ctx.lineTo(this.x + 15, this.y + this.height/2 - 2);
+            ctx.quadraticCurveTo(
+                this.x + 25, this.y + this.height - 4,
+                this.x + 35, this.y + this.height/2
+            );
+            ctx.closePath();
+            ctx.fill();
+
+            // Landing skids
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 1.5;
+            
+            // Front skid
+            ctx.beginPath();
+            ctx.moveTo(this.x + 30, this.y + this.height);
+            ctx.lineTo(this.x + 30, this.y + this.height + 3);
+            ctx.lineTo(this.x + 10, this.y + this.height + 3);
+            ctx.stroke();
+            
+            // Rear skid
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y + this.height);
+            ctx.lineTo(this.x, this.y + this.height + 3);
+            ctx.lineTo(this.x - 15, this.y + this.height + 3);
+            ctx.stroke();
+
+            // Main rotor
+            this.rotorAngle += this.rotorSpeed;
+            ctx.save();
+            ctx.translate(this.x + 15, this.y + 2);
+            ctx.rotate(this.rotorAngle);
+            
+            // Rotor blades with motion blur
+            for (let i = 0; i < 2; i++) {
+                ctx.rotate(Math.PI);
+                ctx.strokeStyle = `rgba(26, 26, 26, ${0.7 - i * 0.3})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(this.width/2, 0);
+                ctx.stroke();
+            }
+            
+            // Rotor hub
+            ctx.fillStyle = this.rotorColor;
+            ctx.beginPath();
+            ctx.arc(0, 0, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+            
+        } else if (this.type === 'tanker') {
+            // TANKER HELICOPTER - Military-style heavy transport
+            
+            // Create a position with the vertical offset applied
+            const offsetY = this.y + (this.verticalOffset || 0);
+            
+            // Chunky main body - like a flying brick
+            ctx.fillStyle = this.bodyColor;
+            ctx.beginPath();
+            ctx.rect(this.x - 15, offsetY + this.height/2 - 10, 45, 20);
+            ctx.fill();
+            
+            // More pronounced nose section
+            ctx.beginPath();
+            ctx.moveTo(this.x + 30, offsetY + this.height/2 - 5);  // Top front
+            ctx.lineTo(this.x + 35, offsetY + this.height/2);      // Nose point
+            ctx.lineTo(this.x + 30, offsetY + this.height/2 + 5);  // Bottom front
+            ctx.lineTo(this.x + 25, offsetY + this.height/2 + 5);  // Bottom back
+            ctx.lineTo(this.x + 25, offsetY + this.height/2 - 5);  // Top back
+            ctx.closePath();
+            ctx.fill();
+            
+            // Larger cargo compartment with detail (military transport style)
+            ctx.fillStyle = this.bodyColor;
+            ctx.beginPath();
+            ctx.rect(this.x - 10, offsetY + this.height/2 - 20, 30, 10);
+            ctx.fill();
+            
+            // Detail panels on cargo compartment
+            ctx.strokeStyle = '#4D352F'; // Darker brown for detail
+            ctx.lineWidth = 1;
+            // Horizontal panel lines
+            ctx.beginPath();
+            ctx.moveTo(this.x - 10, offsetY + this.height/2 - 15);
+            ctx.lineTo(this.x + 20, offsetY + this.height/2 - 15);
+            ctx.stroke();
+            
+            // Vertical panel lines
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath();
+                ctx.moveTo(this.x - 5 + i * 10, offsetY + this.height/2 - 20);
+                ctx.lineTo(this.x - 5 + i * 10, offsetY + this.height/2 - 10);
+                ctx.stroke();
+            }
+            
+            // Armored cockpit - militaristic style with angular window
+            ctx.fillStyle = this.bodyColor; // Frame color
+            ctx.beginPath();
+            ctx.rect(this.x + 20, offsetY + this.height/2 - 8, 14, 16);
+            ctx.fill();
+            
+            // Angular window
+            ctx.fillStyle = 'rgba(135, 206, 235, 0.7)';
+            ctx.beginPath();
+            ctx.moveTo(this.x + 22, offsetY + this.height/2 - 6);
+            ctx.lineTo(this.x + 32, offsetY + this.height/2 - 6);
+            ctx.lineTo(this.x + 32, offsetY + this.height/2 + 6);
+            ctx.lineTo(this.x + 22, offsetY + this.height/2 + 6);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Thicker, stronger tail section
+            ctx.fillStyle = this.bodyColor;
+            ctx.beginPath();
+            ctx.moveTo(this.x - 15, offsetY + this.height/2 - 5);
+            ctx.lineTo(this.x - 45, offsetY + this.height/2 - 8);
+            ctx.lineTo(this.x - 45, offsetY + this.height/2 + 8);
+            ctx.lineTo(this.x - 15, offsetY + this.height/2 + 5);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Add tail detail - vertical stabilizer
+            ctx.beginPath();
+            ctx.moveTo(this.x - 40, offsetY + this.height/2 - 8);
+            ctx.lineTo(this.x - 40, offsetY + this.height/2 - 20);
+            ctx.lineTo(this.x - 35, offsetY + this.height/2 - 20);
+            ctx.lineTo(this.x - 35, offsetY + this.height/2 - 8);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Tail rotor - enclosed in protective housing
+            ctx.fillStyle = '#333333';
+            ctx.beginPath();
+            ctx.rect(this.x - 52, offsetY + this.height/2 - 7, 7, 14);
+            ctx.fill();
+            
+            // Tail rotor blades (glimpse inside housing)
+            ctx.save();
+            ctx.translate(this.x - 48, offsetY + this.height/2);
+            ctx.rotate(Date.now() / 150);  // Slower rotation
+            
+            ctx.strokeStyle = '#111111';
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < 2; i++) {
+                ctx.rotate(Math.PI);
+                ctx.beginPath();
+                ctx.moveTo(0, -4);
+                ctx.lineTo(0, 4);
+                ctx.stroke();
+            }
+            ctx.restore();
+            
+            // Warning stripes/markings - military style
+            ctx.fillStyle = this.accentColor;
+            
+            // Striped warning pattern on tail
+            for (let i = 0; i < 3; i++) {
+                if (i % 2 === 0) {
+                    ctx.fillRect(this.x - 35 + i*7, offsetY + this.height/2 - 2, 7, 4);
+                }
+            }
+            
+            // Nose warning stripe
+            ctx.fillRect(this.x + 25, offsetY + this.height/2 - 3, 7, 2);
+            
+            // Military-style markings/insignia
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(this.x, offsetY + this.height/2 - 15, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Heavy-duty landing gear (thicker, with hydraulics)
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 3;
+            
+            // Front landing gear with hydraulic detail
+            ctx.beginPath();
+            ctx.moveTo(this.x + 20, offsetY + this.height/2 + 10);
+            ctx.lineTo(this.x + 20, offsetY + this.height/2 + 17);
+            ctx.lineTo(this.x + 5, offsetY + this.height/2 + 17);
+            ctx.stroke();
+            
+            // Hydraulic detail for front gear
+            ctx.beginPath();
+            ctx.moveTo(this.x + 18, offsetY + this.height/2 + 10);
+            ctx.lineTo(this.x + 16, offsetY + this.height/2 + 14);
+            ctx.stroke();
+            
+            // Rear landing gear with hydraulic detail
+            ctx.beginPath();
+            ctx.moveTo(this.x - 10, offsetY + this.height/2 + 10);
+            ctx.lineTo(this.x - 10, offsetY + this.height/2 + 17);
+            ctx.lineTo(this.x - 25, offsetY + this.height/2 + 17);
+            ctx.stroke();
+            
+            // Hydraulic detail for rear gear
+            ctx.beginPath();
+            ctx.moveTo(this.x - 12, offsetY + this.height/2 + 10);
+            ctx.lineTo(this.x - 14, offsetY + this.height/2 + 14);
+            ctx.stroke();
+            
+            // Main rotor - heavier blades, slower rotation
+            this.rotorAngle += this.rotorSpeed * 0.8; // Even slower for tanker
+            ctx.save();
+            ctx.translate(this.x + 5, offsetY + this.height/2 - 20);
+            
+            // Rotor hub and shaft - larger, industrial looking
+            ctx.fillStyle = '#333333';
+            // Shaft
+            ctx.fillRect(-3, -8, 6, 8);
+            // Hub
+            ctx.fillRect(-6, -2, 12, 4);
+            
+            // Heavy-duty rotor blades - thicker, more substantial
+            for (let i = 0; i < 2; i++) {
+                ctx.save();
+                ctx.rotate(this.rotorAngle + i * Math.PI);
+                
+                // Blade with taper
+                ctx.fillStyle = '#333333';
+                ctx.beginPath();
+                ctx.moveTo(-3, 0);
+                ctx.lineTo(-this.width/2 - 5, -2);
+                ctx.lineTo(-this.width/2 - 5, 2);
+                ctx.lineTo(3, 0);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Do the same for the other side
+                ctx.beginPath();
+                ctx.moveTo(3, 0);
+                ctx.lineTo(this.width/2 + 5, -2);
+                ctx.lineTo(this.width/2 + 5, 2);
+                ctx.lineTo(-3, 0);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.restore();
+            }
+            ctx.restore();
         }
         
-        // Rotor hub
-        ctx.fillStyle = this.rotorColor;
-        ctx.beginPath();
-        ctx.arc(0, 0, 2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-
         ctx.restore();
     }
 
@@ -236,37 +453,91 @@ class Helicopter {
         // This is a simplified version of the draw method that only draws the helicopter body
         // without game-specific elements like rotor animation, hitbox, etc.
         
-        // Set the helicopter color based on type
-        const bodyColor = this.type === 'tanker' ? '#8B4513' : '#4682B4';
+        if (this.type === 'scout') {
+            // Scout - sleek and aerodynamic
+            ctx.fillStyle = this.bodyColor;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 15, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw cockpit
+            ctx.fillStyle = '#ADD8E6';
+            ctx.beginPath();
+            ctx.ellipse(5, -2, 7, 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw tail
+            ctx.fillStyle = this.bodyColor;
+            ctx.beginPath();
+            ctx.moveTo(-10, 0);
+            ctx.lineTo(-25, -5);
+            ctx.lineTo(-25, 5);
+            ctx.closePath();
+            ctx.fill();
+        } else if (this.type === 'tanker') {
+            // Tanker - military transport style
+            
+            // Apply the vertical offset
+            ctx.translate(0, this.verticalOffset || 0);
+            
+            // Main body - chunky rectangular shape
+            ctx.fillStyle = this.bodyColor;
+            ctx.fillRect(-15, -10, 40, 20);
+            
+            // Nose section
+            ctx.beginPath();
+            ctx.moveTo(25, -5);  // Top front
+            ctx.lineTo(30, 0);   // Nose point
+            ctx.lineTo(25, 5);   // Bottom front
+            ctx.lineTo(20, 5);   // Bottom back
+            ctx.lineTo(20, -5);  // Top back
+            ctx.closePath();
+            ctx.fill();
+            
+            // Cargo compartment on top
+            ctx.fillRect(-10, -20, 30, 10);
+            
+            // Cockpit window
+            ctx.fillStyle = 'rgba(135, 206, 235, 0.7)';
+            ctx.fillRect(18, -6, 10, 12);
+            
+            // Tail section
+            ctx.fillStyle = this.bodyColor;
+            ctx.beginPath();
+            ctx.moveTo(-15, -5);
+            ctx.lineTo(-35, -8);
+            ctx.lineTo(-35, 8);
+            ctx.lineTo(-15, 5);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Vertical stabilizer
+            ctx.beginPath();
+            ctx.moveTo(-30, -8);
+            ctx.lineTo(-30, -18);
+            ctx.lineTo(-25, -18);
+            ctx.lineTo(-25, -8);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Warning stripes
+            ctx.fillStyle = this.accentColor;
+            ctx.fillRect(-25, -2, 5, 4);
+            
+            // Military insignia
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(0, -15, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
         
-        // Draw helicopter body
-        ctx.fillStyle = bodyColor;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 15, 8, 0, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Draw cockpit
-        ctx.fillStyle = '#ADD8E6';
-        ctx.beginPath();
-        ctx.ellipse(5, -2, 7, 4, 0, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Draw tail
-        ctx.fillStyle = bodyColor;
-        ctx.beginPath();
-        ctx.moveTo(-10, 0);
-        ctx.lineTo(-25, -5);
-        ctx.lineTo(-25, 5);
-        ctx.closePath();
-        ctx.fill();
-        
-        // Draw rotor base
+        // Draw rotor base (common for both types)
         ctx.fillStyle = '#333';
         ctx.beginPath();
         ctx.arc(0, -8, 2, 0, Math.PI * 2);
         ctx.fill();
         
-        // Draw static rotor (not animated)
+        // Draw static rotor (common for both types)
         ctx.strokeStyle = '#333';
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -297,15 +568,33 @@ class Helicopter {
         
         // Update helicopter properties based on type
         if (type === 'scout') {
+            // Scout helicopter - sleek and aerodynamic
             this.bodyColor = '#4682B4'; // Steel blue
+            this.accentColor = '#FFD700'; // Bright yellow
             this.gravity = 0.20;
             this.liftForce = -4;
-            this.maxLiftVelocity = 4;  // Standard max lift velocity
+            this.maxLiftVelocity = 4;
+            
+            // Standard size
+            this.width = 50; 
+            this.height = 20;
+            
+            // Standard vertical offset (for helipad positioning)
+            this.verticalOffset = 0;
         } else if (type === 'tanker') {
-            this.bodyColor = '#8B4513'; // Saddle brown
-            this.gravity = 0.35;  // Heavier, falls faster (5/5 drop rating)
-            this.liftForce = -3;  // Improved lift force but still weaker than Scout (2/5 lift rating)
-            this.maxLiftVelocity = 7;  // Lower max lift velocity to maintain character
+            // Tanker helicopter - heavier and bulkier
+            this.bodyColor = '#5D4037'; // Dark brown
+            this.accentColor = '#FF6F00'; // Orange warning color
+            this.gravity = 0.35;
+            this.liftForce = -3;
+            this.maxLiftVelocity = 7;
+            
+            // Larger size for tanker
+            this.width = 70;
+            this.height = 30;
+            
+            // Make it sit higher on the helipad
+            this.verticalOffset = -6;
         }
     }
 }
@@ -975,6 +1264,10 @@ class Game {
         this.obstacles = [];
         this.obstacleTimer = 0;
         
+        // Add flag to track space key state
+        this.isSpaceKeyDown = false;
+        this.waitForSpaceRelease = false;
+        
         // Load leaderboard after initialization
         this.loadLeaderboard();
         
@@ -984,6 +1277,8 @@ class Game {
         // Update event listeners
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
+                this.isSpaceKeyDown = true;
+                
                 if (this.gameState === 'start') {
                     this.gameState = 'takeoff';
                     this.helicopter.y = this.canvas.height - 50; // Adjusted height to match raised helipad
@@ -991,9 +1286,12 @@ class Game {
                     this.gameState = 'playing';
                     this.helicopter.lift();
                 } else if (this.gameState === 'gameover') {
-                    this.reset();
-                    this.gameState = 'takeoff';
-                    this.helicopter.y = this.canvas.height - 50; // Adjusted height to match raised helipad
+                    // Only restart if we're not waiting for space release
+                    if (!this.waitForSpaceRelease) {
+                        this.reset();
+                        this.gameState = 'takeoff';
+                        this.helicopter.y = this.canvas.height - 50; // Adjusted height to match raised helipad
+                    }
                 } else {
                     this.helicopter.lift();
                 }
@@ -1002,6 +1300,8 @@ class Game {
 
         document.addEventListener('keyup', (e) => {
             if (e.code === 'Space') {
+                this.isSpaceKeyDown = false;
+                this.waitForSpaceRelease = false; // Reset the wait flag when space is released
                 this.helicopter.stopLift();
             }
         });
@@ -1009,6 +1309,10 @@ class Game {
         // Prevent default touch behaviors
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
+            
+            // Track touch state similar to space key
+            this.isSpaceKeyDown = true;
+            
             if (this.gameState === 'start') {
                 this.gameState = 'takeoff';
                 this.helicopter.y = this.canvas.height - 50;
@@ -1016,9 +1320,12 @@ class Game {
                 this.gameState = 'playing';
                 this.helicopter.lift();
             } else if (this.gameState === 'gameover') {
-                this.reset();
-                this.gameState = 'takeoff';
-                this.helicopter.y = this.canvas.height - 50;
+                // Only restart if we're not waiting for touch release
+                if (!this.waitForSpaceRelease) {
+                    this.reset();
+                    this.gameState = 'takeoff';
+                    this.helicopter.y = this.canvas.height - 50;
+                }
             } else {
                 this.helicopter.lift();
             }
@@ -1026,6 +1333,11 @@ class Game {
 
         this.canvas.addEventListener('touchend', (e) => {
             e.preventDefault();
+            
+            // Reset touch state similar to space key
+            this.isSpaceKeyDown = false;
+            this.waitForSpaceRelease = false;
+            
             this.helicopter.stopLift();
         }, { passive: false });
 
@@ -1450,7 +1762,17 @@ class Game {
     }
 
     updateLeaderboardDisplay() {
-        this.leaderboardElement.innerHTML = this.leaderboard
+        // Add header row
+        let leaderboardHTML = `
+            <div class="score-entry header">
+                <span>Pilot</span>
+                <span class="helicopter-type">Type</span>
+                <span>Score</span>
+            </div>
+        `;
+        
+        // Add entries
+        leaderboardHTML += this.leaderboard
             .map((entry, index) => {
                 let position;
                 switch(index) {
@@ -1466,13 +1788,32 @@ class Game {
                     default:
                         position = `${index + 1}.`;
                 }
+                
+                // Use a default value if helicopterType is not available (for backward compatibility)
+                const helicopterType = entry.helicopterType || '---';
+                
+                // Format score with leading zeros at 60% opacity
+                const scoreStr = entry.score.toString();
+                const paddedScore = scoreStr.padStart(6, '0');
+                const leadingZerosCount = paddedScore.length - scoreStr.length;
+                
+                let formattedScore = '';
+                if (leadingZerosCount > 0) {
+                    formattedScore = `<span style="opacity: 0.6">${paddedScore.substring(0, leadingZerosCount)}</span>${scoreStr}`;
+                } else {
+                    formattedScore = scoreStr;
+                }
+                
                 return `
                     <div class="score-entry">
                         <span>${position} ${entry.initials}</span>
-                        <span>${entry.score.toString().padStart(6, '0')}</span>
+                        <span class="helicopter-type">${helicopterType}</span>
+                        <span>${formattedScore}</span>
                     </div>
                 `;
             }).join('');
+            
+        this.leaderboardElement.innerHTML = leaderboardHTML;
     }
 
     loadLeaderboard() {
@@ -1512,12 +1853,16 @@ class Game {
             const handleSubmit = () => {
                 let initials = input.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) || 'AAA';
                 
+                // Capitalize first letter of helicopter type for display
+                const helicopterType = this.selectedHelicopterType.charAt(0).toUpperCase() + this.selectedHelicopterType.slice(1);
+                
                 // Add new score to Firebase
                 const newScoreRef = this.database.ref('leaderboard').push();
                 newScoreRef.set({
                     initials: initials,
                     score: currentScore,
-                    date: new Date().toLocaleDateString()
+                    date: new Date().toLocaleDateString(),
+                    helicopterType: helicopterType // Add helicopter type to the entry
                 }).then(() => {
                     // Reload leaderboard after adding new score
                     this.loadLeaderboard();
@@ -1552,6 +1897,11 @@ class Game {
     handleCollision() {
         this.gameState = 'gameover';
         this.isGameOver = true;
+        
+        // Set flag to wait for space release if space is currently down
+        if (this.isSpaceKeyDown) {
+            this.waitForSpaceRelease = true;
+        }
         
         // Play crash sound first
         this.gameAudio.play('crash');
@@ -1632,6 +1982,14 @@ class Game {
         if (closeButton) {
             closeButton.remove();
         }
+        
+        // Add or update title
+        let titleElement = modalContent.querySelector('h3');
+        if (!titleElement) {
+            titleElement = document.createElement('h3');
+            modalContent.insertBefore(titleElement, modalContent.firstChild);
+        }
+        titleElement.textContent = 'Choose Your Helicopter';
         
         const optionsContainer = modalContent.querySelector('.helicopter-options');
         if (!optionsContainer) return;
@@ -1714,6 +2072,11 @@ class Game {
                     this.helicopter.setType('scout');
                 } else if (type === 'tanker') {
                     this.helicopter.setType('tanker');
+                }
+                
+                // Update the decorative helicopter on the homescreen
+                if (this.decorativeHelicopter) {
+                    this.decorativeHelicopter.setType(type);
                 }
                 
                 // Close the modal
