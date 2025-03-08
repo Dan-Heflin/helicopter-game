@@ -212,22 +212,27 @@ class Helicopter {
             ctx.closePath();
             ctx.fill();
 
-            // Landing skids
+            // Landing skids - single front skid only
             ctx.strokeStyle = '#333333';
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = 2; // Thicker line for better visibility
             
-            // Front skid
+            // Front skid with vertical supports - directly attached to helicopter
             ctx.beginPath();
-            ctx.moveTo(this.x + 30, this.y + this.height);
-            ctx.lineTo(this.x + 30, this.y + this.height + 3);
-            ctx.lineTo(this.x + 10, this.y + this.height + 3);
+            // First support - start from the bottom of the helicopter body
+            ctx.moveTo(this.x + 25, this.y + this.height - 1);
+            ctx.lineTo(this.x + 25, this.y + this.height + 5);
             ctx.stroke();
             
-            // Rear skid
             ctx.beginPath();
-            ctx.moveTo(this.x, this.y + this.height);
-            ctx.lineTo(this.x, this.y + this.height + 3);
-            ctx.lineTo(this.x - 15, this.y + this.height + 3);
+            // Second support - start from the bottom of the helicopter body
+            ctx.moveTo(this.x + 15, this.y + this.height - 1);
+            ctx.lineTo(this.x + 15, this.y + this.height + 5);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            // Horizontal skid
+            ctx.moveTo(this.x + 25, this.y + this.height + 5);
+            ctx.lineTo(this.x + 5, this.y + this.height + 5);
             ctx.stroke();
 
             // Main rotor
@@ -474,6 +479,26 @@ class Helicopter {
             ctx.lineTo(-25, 5);
             ctx.closePath();
             ctx.fill();
+            
+            // Draw landing skids - single front skid only
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 1.5;
+            
+            // Front skid with vertical supports - moved forward
+            ctx.beginPath();
+            ctx.moveTo(15, 10);  // First support
+            ctx.lineTo(15, 14);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(5, 10);   // Second support
+            ctx.lineTo(5, 14);
+            ctx.stroke();
+            
+            ctx.beginPath();    // Horizontal skid
+            ctx.moveTo(15, 14);
+            ctx.lineTo(-5, 14);
+            ctx.stroke();
         } else if (this.type === 'tanker') {
             // Tanker - military transport style
             
@@ -1756,8 +1781,8 @@ class Game {
         // Store the current helicopter type before creating a new helicopter
         const currentType = this.selectedHelicopterType || 'scout';
         
-        // Create new helicopter
-        this.helicopter = new Helicopter(130, this.canvas.height - 50, this.canvas, this.gameAudio);
+        // Create new helicopter - position it higher to sit on the skids
+        this.helicopter = new Helicopter(130, this.canvas.height - 60, this.canvas, this.gameAudio);
         
         // Set the helicopter type to the previously selected type
         this.helicopter.setType(currentType);
@@ -2127,7 +2152,7 @@ class Game {
         // Position it in the center of the screen
         this.decorativeHelicopter = new Helicopter(
             this.canvas.width * 0.2, 
-            this.canvas.height * 0.5, 
+            this.canvas.height * 0.45, // Position it slightly higher 
             this.canvas,
             this.gameAudio
         );
