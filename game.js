@@ -550,7 +550,7 @@ class Helicopter {
         this.isLifting = true;
         // Play helicopter sound when lifting
         if (!this.liftSound && this.gameAudio) {
-            this.liftSound = this.gameAudio.play('helicopter', true);  // Make sure to pass true for loop
+            this.liftSound = this.gameAudio.play('helicopter', true, this.type);  // Pass helicopter type
         }
     }
 
@@ -600,27 +600,29 @@ class Helicopter {
 }
 
 class Obstacle {
-    constructor(canvas, score) {
+    constructor(canvas, score, isMobile, previousObstacle = null) {
         this.canvas = canvas;
         this.width = 100 + Math.random() * 60;
         this.x = canvas.width;
+        this.isMobile = isMobile; // Store isMobile for minimum height check
         
         // Calculate difficulty level (every 250 points instead of 50)
         const difficultyLevel = Math.floor(score / 250);
         
         // Reduce gap size as difficulty increases
-        const baseMinGap = 130;
-        const baseMaxGap = 180;
+        // Increase base gap sizes for mobile
+        const baseMinGap = isMobile ? 190 : 130; // Increased from 160 to 190
+        const baseMaxGap = isMobile ? 240 : 180; // Increased from 210 to 240
         const gapReduction = Math.min(difficultyLevel * 30, 40);
         
         // Calculate initial gaps
-        let minGap = Math.max(baseMinGap - gapReduction, 40);
-        let maxGap = Math.max(baseMaxGap - gapReduction, 70);
+        let minGap = Math.max(baseMinGap - gapReduction, isMobile ? 80 : 40); // Higher minimum for mobile (increased from 60 to 80)
+        let maxGap = Math.max(baseMaxGap - gapReduction, isMobile ? 110 : 70); // Higher maximum for mobile (increased from 90 to 110)
         
-        // Hard mode after score 1000
+        // Hard mode after score 1000 - make it less harsh on mobile
         if (score > 1000) {
-            minGap = Math.floor(minGap * 0.5);
-            maxGap = Math.floor(maxGap * 0.5);
+            minGap = Math.floor(minGap * (isMobile ? 0.7 : 0.5)); // Less reduction on mobile (70% vs 50%)
+            maxGap = Math.floor(maxGap * (isMobile ? 0.7 : 0.5)); // Less reduction on mobile (70% vs 50%)
         }
         
         this.gap = minGap + Math.random() * (maxGap - minGap);
@@ -650,6 +652,9 @@ class Obstacle {
         const segments = 8;
         const segmentWidth = this.width / segments;
         
+        // Define minimum obstacle height in pixels
+        const minObstacleHeight = this.isMobile ? 60 : 30; // Higher minimum on mobile
+        
         for (let i = 0; i <= segments; i++) {
             const x = this.x + (i * segmentWidth);
             let y;
@@ -665,13 +670,17 @@ class Obstacle {
             if (i <= 1) taperFactor = i / 1;
             if (i >= segments - 1) taperFactor = (segments - i) / 1;
             
-            y = (minHeight + (maxExtend - minHeight) * Math.random()) * taperFactor;
+            // Calculate height with original formula
+            let calculatedHeight = (minHeight + (maxExtend - minHeight) * Math.random()) * taperFactor;
+            
+            // Enforce minimum height (with tapering at edges)
+            calculatedHeight = Math.max(calculatedHeight, minObstacleHeight * taperFactor);
             
             // For bottom formations, flip the Y coordinate
             if (!isTop) {
-                y = this.canvas.height - y;
+                y = this.canvas.height - calculatedHeight;
             } else {
-                y = y;  // Keep top formations as they are
+                y = calculatedHeight;  // Keep top formations as they are
             }
             
             // Add intermediate points for smoother shapes
@@ -1015,9 +1024,10 @@ class GameAudio {
         this.highScoreSound = new Audio('sounds/highscore.flac');
         this.highScoreSound.volume = 0.5;
         
-        // Keep helicopter in Web Audio API for looping
+        // Keep helicopter sounds in Web Audio API for looping
         this.soundFiles = {
-            helicopter: 'sounds/helicopter-loop.wav'
+            helicopter: 'sounds/helicopter-loop.wav',
+            heavyHelicopter: 'sounds/heavy-helicopter.wav'
         };
         
         this.loadSounds();
@@ -1062,7 +1072,7 @@ class GameAudio {
             });
     }
     
-    play(soundName, loop = false) {
+    play(soundName, loop = false, helicopterType = 'scout') {
         if (this.isMuted) return null;
 
         // Resume audio context if needed
@@ -1089,9 +1099,12 @@ class GameAudio {
                 return null;
             case 'helicopter':
                 // Use Web Audio API for looping helicopter sound
-                if (!this.sounds[soundName]) return null;
+                // Choose the appropriate helicopter sound based on type
+                const soundKey = helicopterType === 'tanker' ? 'heavyHelicopter' : 'helicopter';
+                
+                if (!this.sounds[soundKey]) return null;
                 const source = this.audioContext.createBufferSource();
-                source.buffer = this.sounds[soundName];
+                source.buffer = this.sounds[soundKey];
                 source.connect(this.masterGain);
                 source.loop = loop;
                 source.start(0);
@@ -1189,7 +1202,14 @@ class GameAudio {
 
 class Game {
     constructor() {
-        // Move gameAudio initialization earlier
+        // Add a reliable mobile detector as a property of the Game class
+        this.isMobile = this.detectMobile();
+        
+        // Add map type support
+        this.availableMaps = ['cave', 'cityscape'];
+        this.selectedMapType = 'cave'; // Default map
+        
+        // Initialize gameAudio before all other properties that might use it
         this.gameAudio = new GameAudio();
         
         // Initialize Firebase
@@ -1220,12 +1240,11 @@ class Game {
         this.frameInterval = 1000 / this.fps;
         this.lastTime = 0;
         
-        const isMobile = window.innerWidth < 400;
-        
         // Base obstacle distance we want to maintain (in pixels)
-        const targetObstacleDistance = 400;
+        // Increase distance for mobile devices
+        const targetObstacleDistance = this.isMobile ? 550 : 400; // Increased from 500 to 550 for mobile
         
-        if (isMobile) {
+        if (this.isMobile) {
             this.canvas.width = 600;
             this.canvas.height = 600;
             this.canvas.style.width = '100%';
@@ -1390,13 +1409,13 @@ class Game {
     }
 
     setupCanvasSize() {
-        const isMobile = window.innerWidth < 400;
         const oldWidth = this.canvas.width;
         
         // Base obstacle distance we want to maintain (in pixels)
-        const targetObstacleDistance = 400;
+        // Increase distance for mobile devices
+        const targetObstacleDistance = this.isMobile ? 550 : 400; // Increased from 500 to 550 for mobile
         
-        if (isMobile) {
+        if (this.isMobile) {
             this.canvas.width = 600;
             this.canvas.height = 600;
             this.canvas.style.width = '100%';
@@ -1433,6 +1452,9 @@ class Game {
     handleResize() {
         const oldWidth = this.canvas.width;
         const oldHeight = this.canvas.height;
+        
+        // Update mobile detection when window is resized
+        this.isMobile = this.detectMobile();
         
         this.setupCanvasSize();
         
@@ -1548,7 +1570,9 @@ class Game {
                 // Update obstacles
                 this.obstacleTimer++;
                 if (this.obstacleTimer > this.obstacleInterval) {
-                    this.obstacles.push(new Obstacle(this.canvas, Math.floor(this.score / 10)));
+                    // Get last obstacle but don't use it for positioning yet - just keeping parameter
+                    const lastObstacle = this.obstacles.length > 0 ? this.obstacles[this.obstacles.length - 1] : null;
+                    this.obstacles.push(new Obstacle(this.canvas, Math.floor(this.score / 10), this.isMobile, lastObstacle));
                     this.obstacleTimer = 0;
                 }
 
@@ -1573,7 +1597,6 @@ class Game {
                 const gameScore = Math.floor(this.score / 10);  // Convert to game score
                 const currentMilestone = Math.floor(gameScore / 250) * 250;  // Every 250 points of game score
                 if (currentMilestone > this.lastMilestone && currentMilestone <= 1000) {
-                    console.log('Playing difficulty increase sound at game score:', currentMilestone);
                     this.gameAudio.play('difficulty');  // Updated name
                     this.lastMilestone = currentMilestone;
                 }
@@ -1624,8 +1647,7 @@ class Game {
                 this.canvas.height / 2 - 40);
             
             this.ctx.font = '24px Arial';
-            const isMobile = ('ontouchstart' in window);
-            this.ctx.fillText(isMobile ? 'Tap to Start' : 'Press Space to Start', 
+            this.ctx.fillText(this.isMobile ? 'Tap to Start' : 'Press Space to Start', 
                 this.canvas.width / 2, 
                 this.canvas.height / 2 + 20);
             
@@ -1667,8 +1689,7 @@ class Game {
         
         // Draw scores with adjusted positioning for mobile
         if (this.gameState === 'playing' || this.gameState === 'gameover') {
-            const isMobile = window.innerWidth < 400;
-            const padding = isMobile ? 20 : 10;  // More padding on mobile
+            const padding = this.isMobile ? 20 : 10;  // More padding on mobile
             
             this.ctx.fillStyle = this.textColor;
             this.ctx.font = '20px Arial';
@@ -1692,8 +1713,7 @@ class Game {
             this.ctx.fillStyle = this.textColor;
             this.ctx.font = '24px Arial';
             this.ctx.textAlign = 'center';
-            const isMobile = ('ontouchstart' in window);
-            this.ctx.fillText(isMobile ? 'Tap to Take Off' : 'Press Space to Take Off', 
+            this.ctx.fillText(this.isMobile ? 'Tap to Take Off' : 'Press Space to Take Off', 
                 this.canvas.width / 2, 
                 this.canvas.height / 2);
             this.ctx.textAlign = 'left';
@@ -2176,6 +2196,14 @@ class Game {
         
         // Restore original lift method
         this.decorativeHelicopter.lift = originalLift;
+    }
+
+    // Add a reliable mobile detection method
+    detectMobile() {
+        // Use both screen size and touch capability for more reliable detection
+        return (window.innerWidth < 400) || ('ontouchstart' in window) || 
+               (navigator.maxTouchPoints > 0) || 
+               (navigator.msMaxTouchPoints > 0);
     }
 }
 
