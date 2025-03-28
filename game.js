@@ -1862,13 +1862,24 @@ class Game {
     }
 
     loadLeaderboard() {
-        this.database.ref('leaderboard').once('value')
+        this.database.ref('scores').once('value')
             .then((snapshot) => {
                 const data = snapshot.val();
-                this.leaderboard = Object.values(data)
-                    .sort((a, b) => b.score - a.score)
-                    .slice(0, 5);
-                this.updateLeaderboardDisplay();
+                if (data) {
+                    this.leaderboard = Object.entries(data)
+                        .map(([key, value]) => ({
+                            initials: value.initials || 'AAA',
+                            score: value.score || 0,
+                            date: value.date || new Date().toLocaleDateString(),
+                            helicopterType: value.helicopterType || 'Scout'
+                        }))
+                        .sort((a, b) => b.score - a.score)
+                        .slice(0, 5);
+                    this.updateLeaderboardDisplay();
+                }
+            })
+            .catch((error) => {
+                console.error('Error loading leaderboard:', error);
             });
     }
 
@@ -1902,15 +1913,17 @@ class Game {
                 const helicopterType = this.selectedHelicopterType.charAt(0).toUpperCase() + this.selectedHelicopterType.slice(1);
                 
                 // Add new score to Firebase
-                const newScoreRef = this.database.ref('leaderboard').push();
+                const newScoreRef = this.database.ref('scores').push();
                 newScoreRef.set({
-                    initials: initials,
                     score: currentScore,
+                    initials: initials,
                     date: new Date().toLocaleDateString(),
-                    helicopterType: helicopterType // Add helicopter type to the entry
+                    helicopterType: helicopterType
                 }).then(() => {
                     // Reload leaderboard after adding new score
                     this.loadLeaderboard();
+                }).catch((error) => {
+                    console.error('Error submitting score:', error);
                 });
                 
                 modal.style.display = 'none';
