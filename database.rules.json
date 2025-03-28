@@ -1,8 +1,11 @@
 {
   "rules": {
-    "leaderboard": {
+    "scores": {
       ".read": true,
-      ".write": true
+      "$pushId": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['score', 'initials', 'date', 'helicopterType']) && newData.child('score').isNumber() && newData.child('score').val() >= 0 && newData.child('score').val() <= 1000 && newData.child('initials').isString() && newData.child('date').isString() && newData.child('helicopterType').isString()"
+      }
     }
   }
 } 
