@@ -14,100 +14,12 @@ body, html {
 body {
     margin: 0;
     padding: 0;
-    font-family: Arial, sans-serif;
-    background-color: #121212;
-    color: white;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #0a0a1a 0%, #0d1117 50%, #0a0a1a 100%);
+    color: #e0e0e0;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-}
-
-/* ===== GAME CONTROLS ===== */
-.game-control {
-  background-color: rgba(0, 0, 0, 0);
-  color: #4a895c;
-  border: 2px solid #4a895c;
-  border-radius: 4px;
-  padding: 8px;
-  margin: 0 5px 0 0;
-  cursor: pointer;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 16px;
-  transition: background-color 0.2s ease;
-  width: 36px;
-  height: 36px;
-}
-
-.game-control:hover {
-  background-color: rgba(74, 137, 92, 0.8);
-  color: white;
-}
-
-/* ===== AUDIO CONTROLS ===== */
-.audio-controls {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  display: flex;
-  align-items: end;
-  z-index: 100;
-  flex-direction: row-reverse;
-}
-
-.volume-slider {
-  width: 80px;
-  height: 6px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: rgba(26, 26, 26, 0.8);
-  border: 1px solid #2E8B57;
-  border-radius: 2px;
-  outline: none;
-  vertical-align: middle;
-}
-
-.volume-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
-  background: #2E8B57;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.volume-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  background: #2E8B57;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.utility-button {
-  width: 30px;
-  height: 30px;
-  font-size: 18px;
-  padding: 6px;
-  background: rgba(26, 26, 26, 0.8);
-  border: 2px solid #2E8B57;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s;
-  margin-right: 0;
-  margin-left: 8px;
-}
-
-.utility-button:hover {
-  background: rgba(46, 139, 87, 0.8);
 }
 
 /* ===== LAYOUT ===== */
@@ -115,8 +27,8 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
-    padding: 20px;
+    gap: 16px;
+    padding: 16px;
     height: 100%;
     box-sizing: border-box;
     position: relative;
@@ -124,70 +36,157 @@ body {
 
 .canvas-container {
     position: relative;
-}
-
-#gameContainer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    max-width: 800px;
-    gap: 20px;
-    padding: 20px;
-}
-
-#canvasContainer {
-    width: 100%;
-    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow:
+        0 0 30px rgba(0, 200, 150, 0.15),
+        0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 #gameCanvas {
     width: 100%;
     height: auto;
     display: block;
-    background-color: #1a1a1a;
-    border: 1px solid #000;
+    background-color: #0a0a1a;
+    border-radius: 12px;
 }
 
-#startScreen {
-    text-align: center;
-    margin-bottom: 20px;
+/* ===== AUDIO CONTROLS ===== */
+.audio-controls {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    z-index: 100;
+    flex-direction: row-reverse;
+    gap: 6px;
+}
+
+.volume-slider {
+    width: 80px;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 2px;
+    outline: none;
+    vertical-align: middle;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #00c896;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 8px rgba(0, 200, 150, 0.5);
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 12px rgba(0, 200, 150, 0.8);
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: #00c896;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 8px rgba(0, 200, 150, 0.5);
+}
+
+.utility-button {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s ease;
+}
+
+.utility-button:hover {
+    background: rgba(0, 200, 150, 0.2);
+    border-color: rgba(0, 200, 150, 0.4);
+    box-shadow: 0 0 12px rgba(0, 200, 150, 0.3);
+    transform: translateY(-1px);
 }
 
 /* ===== LEADERBOARD ===== */
 #leaderboard {
-    background-color: #1a1a1a;
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     padding: 20px;
-    border-radius: 5px;
+    border-radius: 16px;
     min-width: 300px;
     width: 100%;
-    max-width: 350px;
+    max-width: 380px;
     font-size: 14px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
-#leaderboard h2 {
-    text-align: center;
-    margin-top: 0;
+.leaderboard-header {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.leaderboard-header h2 {
+    margin: 0;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, #00c896, #00a0e9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .score-entry {
     display: flex;
     justify-content: space-between;
-    margin: 5px 0;
-    font-family: monospace;
-    font-size: 14px;
+    margin: 0;
+    padding: 8px 4px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    border-radius: 6px;
+    transition: background 0.2s;
 }
 
-/* Style for the header row */
+.score-entry:not(.header):hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
 .score-entry.header {
-    font-weight: bold;
-    border-bottom: 1px solid #2E8B57;
-    padding-bottom: 5px;
-    margin-bottom: 10px;
-    color: #2E8B57;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(0, 200, 150, 0.2);
+    padding-bottom: 10px;
+    margin-bottom: 4px;
+    color: #00c896;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
-/* Style for the helicopter type column */
 .helicopter-type {
     text-align: center;
     min-width: 70px;
@@ -207,29 +206,6 @@ body {
     text-align: right;
 }
 
-.leaderboard-header {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 15px;
-}
-
-.leaderboard-header h2 {
-    margin: 0;
-}
-
-#clearLeaderboard {
-    background-color: #444;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    cursor: pointer;
-    border-radius: 4px;
-}
-
-#clearLeaderboard:hover {
-    background-color: #555;
-}
-
 /* ===== MODAL STYLES ===== */
 .modal {
     display: none;
@@ -238,34 +214,48 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     z-index: 1000;
     justify-content: center;
     align-items: center;
 }
 
 .modal-content {
-    background-color: #1a1a1a;
-    padding: 20px;
-    border-radius: 8px;
+    background: rgba(15, 15, 30, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 200, 150, 0.2);
+    padding: 28px;
+    border-radius: 16px;
     text-align: center;
-    border: 2px solid #2E8B57;
+    box-shadow:
+        0 0 40px rgba(0, 200, 150, 0.1),
+        0 16px 48px rgba(0, 0, 0, 0.4);
 }
 
 .modal-content h3 {
     margin: 0 0 20px 0;
-    color: #2E8B57;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    background: linear-gradient(135deg, #00c896, #00a0e9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .modal-content p {
     margin: 0 0 15px 0;
+    color: #aaa;
 }
 
 .close-icon {
     position: absolute;
     top: 10px;
     right: 15px;
-    color: #aaa;
+    color: #666;
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
@@ -276,7 +266,6 @@ body {
     color: #fff;
 }
 
-/* Hide old close button */
 .close-button {
     display: none;
 }
@@ -285,87 +274,92 @@ body {
 .input-container {
     display: flex;
     align-items: center;
-    gap: 32px;  /* Horizontal spacing between input and button */
+    gap: 16px;
     justify-content: center;
 }
 
 #initialsInput {
-    background: #2c2c2c;
-    border: 2px solid #2E8B57;
+    background: rgba(255, 255, 255, 0.06);
+    border: 2px solid rgba(0, 200, 150, 0.3);
     color: white;
-    padding: 8px;
-    font-size: 18px;
-    width: 80px;
-    height: 40px;
+    padding: 10px;
+    font-size: 20px;
+    font-family: 'Orbitron', sans-serif;
+    width: 100px;
+    height: 48px;
     text-align: center;
-    border-radius: 4px;
-    margin-bottom: 0;
+    border-radius: 10px;
     text-transform: uppercase;
     box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+#initialsInput:focus {
+    border-color: #00c896;
+    box-shadow: 0 0 16px rgba(0, 200, 150, 0.25);
 }
 
 #submitScore {
-    background: #2E8B57;
+    background: linear-gradient(135deg, #00c896, #00a070);
     color: white;
     border: none;
-    padding: 8px 20px;
-    height: 40px;
-    border-radius: 4px;
+    padding: 10px 24px;
+    height: 48px;
+    border-radius: 10px;
     cursor: pointer;
     font-size: 16px;
-    transition: background-color 0.2s;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.25s;
     box-sizing: border-box;
 }
 
 #submitScore:hover {
-    background: #3aa76a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 200, 150, 0.4);
+}
+
+#submitScore:active {
+    transform: translateY(0);
 }
 
 /* ===== HELICOPTER SELECTION ===== */
-#helicopterSelection h2 {
-    margin-bottom: 15px;
-    color: #fff;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-}
-
 .helicopter-cards {
     display: flex;
     justify-content: center;
-    gap: 20px;
+    gap: 16px;
 }
 
 .helicopter-card {
-    background-color: #2c2c2c;
-    border: 2px solid #444;
-    border-radius: 10px;
-    padding: 15px;
-    width: 250px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 14px;
+    width: 200px;
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
 .helicopter-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 15px rgba(0, 255, 0, 0.3);
-    border-color: #2E8B57;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 200, 150, 0.2);
+    border-color: rgba(0, 200, 150, 0.4);
 }
 
-.helicopter-card.selected {
-    border-color: #2E8B57;
-    box-shadow: 0 0 15px #2E8B57;
-}
-
+.helicopter-card.selected,
 .helicopter-card.active {
-    background-color: rgba(46, 139, 87, 0.2);
-    position: relative;
+    border-color: #00c896;
+    background: rgba(0, 200, 150, 0.08);
+    box-shadow: 0 0 20px rgba(0, 200, 150, 0.15);
 }
 
 .helicopter-card.active::after {
-    content: "✓";
+    content: "\2713";
     position: absolute;
     top: 10px;
     right: 10px;
-    color: #2E8B57;
+    color: #00c896;
     font-size: 18px;
     font-weight: bold;
 }
@@ -373,15 +367,15 @@ body {
 .card-header {
     display: flex;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
 }
 
 .card-image {
-    width: 80px;
-    height: 80px;
-    margin-right: 15px;
-    background-color: #2c2c2c;
-    border-radius: 5px;
+    width: 64px;
+    height: 64px;
+    margin-right: 12px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
     overflow: hidden;
 }
 
@@ -401,11 +395,23 @@ body {
     flex: 1;
 }
 
+.card-title h3 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    margin: 0 0 4px 0;
+}
+
+.card-title p {
+    font-size: 12px;
+    color: #888;
+    margin: 0;
+}
+
 /* ===== HELICOPTER STATS ===== */
 .helicopter-stats {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .stat-row {
@@ -415,7 +421,9 @@ body {
 }
 
 .stat-label {
-    font-weight: bold;
+    font-weight: 600;
+    font-size: 12px;
+    color: #aaa;
     margin-right: 10px;
 }
 
@@ -425,20 +433,22 @@ body {
 }
 
 .stat-block {
-    width: 15px;
-    height: 15px;
-    border-radius: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    transition: all 0.2s;
 }
 
 .stat-block.filled {
-    background-color: #2E8B57;
+    background: linear-gradient(135deg, #00c896, #00a0e9);
+    box-shadow: 0 0 6px rgba(0, 200, 150, 0.3);
 }
 
 .stat-block.empty {
-    background-color: #444;
+    background-color: rgba(255, 255, 255, 0.08);
 }
 
-/* ===== HELICOPTER MODAL SPECIFIC STYLES ===== */
+/* ===== HELICOPTER MODAL ===== */
 #helicopterModal {
     display: none;
     position: fixed;
@@ -446,12 +456,14 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.8);
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     z-index: 1000;
     justify-content: center;
     align-items: center;
     text-align: center;
-    overflow-y: auto; /* Allow scrolling if needed */
+    overflow-y: auto;
 }
 
 #helicopterModal.active {
@@ -466,11 +478,14 @@ body {
 }
 
 #helicopterModal .modal-content {
-    background-color: #1a1a1a;
+    background: rgba(10, 10, 30, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 200, 150, 0.15);
     color: #fff;
-    padding: 15px;
-    border-radius: 10px;
-    max-width: 550px;
+    padding: 20px;
+    border-radius: 16px;
+    max-width: 480px;
     width: auto;
     min-width: 320px;
     margin: 20px auto;
@@ -482,43 +497,40 @@ body {
 #helicopterModal .helicopter-cards {
     display: flex;
     justify-content: center;
-    gap: 15px;
+    gap: 14px;
     flex-wrap: wrap;
 }
 
 #helicopterModal .helicopter-card {
     width: 185px;
-    background-color: rgba(0, 0, 0, 0.7);
-    border: 2px solid #444;
-    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
     padding: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
-    margin-bottom: 12px;
-}
-
-#helicopterModal .helicopter-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 15px rgba(0, 255, 0, 0.3);
-    border-color: #2E8B57;
-}
-
-#helicopterModal .helicopter-card.selected {
-    border-color: #2E8B57;
-    box-shadow: 0 0 15px #2E8B57;
-}
-
-#helicopterModal .helicopter-card.active {
-    background-color: rgba(46, 139, 87, 0.2);
+    margin-bottom: 0;
     position: relative;
 }
 
+#helicopterModal .helicopter-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 200, 150, 0.2);
+    border-color: rgba(0, 200, 150, 0.4);
+}
+
+#helicopterModal .helicopter-card.selected,
+#helicopterModal .helicopter-card.active {
+    border-color: #00c896;
+    background: rgba(0, 200, 150, 0.08);
+}
+
 #helicopterModal .helicopter-card.active::after {
-    content: "✓";
+    content: "\2713";
     position: absolute;
     top: 10px;
     right: 10px;
-    color: #2E8B57;
+    color: #00c896;
     font-size: 18px;
     font-weight: bold;
 }
@@ -526,34 +538,35 @@ body {
 #helicopterModal .card-header {
     display: flex;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
 #helicopterModal .card-image {
-    width: 70px;
-    height: 70px;
-    margin-right: 12px;
+    width: 60px;
+    height: 60px;
+    margin-right: 10px;
     margin-bottom: 0;
-    background-color: #2c2c2c;
-    border-radius: 5px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
     overflow: hidden;
 }
 
 #helicopterModal .card-title {
     flex: 1;
+    text-align: left;
 }
 
 #helicopterModal .helicopter-stats {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 5px;
 }
 
 #helicopterModal .stat-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 5px;
+    margin-top: 4px;
 }
 
 #helicopterModal .stat-row span {
@@ -567,25 +580,35 @@ body {
 
 /* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
+    .container {
+        padding: 8px;
+        gap: 12px;
+    }
+
+    #leaderboard {
+        max-width: 100%;
+        padding: 16px;
+    }
+
     #helicopterModal .modal-content {
         width: auto;
         max-width: 430px;
         padding: 15px;
     }
-    
+
     #helicopterModal .helicopter-card {
         width: 100%;
         max-width: 200px;
         padding: 10px;
     }
-    
+
     #helicopterModal .helicopter-cards {
-        gap: 15px;
+        gap: 12px;
     }
-    
+
     #helicopterModal .card-image {
-        width: 60px;
-        height: 60px;
+        width: 50px;
+        height: 50px;
     }
 }
 
@@ -596,152 +619,135 @@ body {
         height: 400px;
         object-fit: contain;
     }
-    
+
     .container {
-        padding: 10px;
+        padding: 6px;
     }
-    
-    .helicopter-card {
-        width: 100%;
-    }
-    
-    /* Adjust leaderboard for mobile */
+
     #leaderboard {
-        padding: 15px;
+        padding: 12px;
         max-width: 100%;
         font-size: 13px;
+        border-radius: 12px;
     }
-    
+
     .helicopter-type {
         min-width: 60px;
         font-size: 13px;
     }
-    
-    /* Adjust audio controls for mobile */
+
     .audio-controls {
-        bottom: 5px;
-        right: 5px;
+        bottom: 6px;
+        right: 6px;
     }
-    
+
     .volume-slider {
         width: 60px;
     }
-    
+
     .utility-button {
         width: 28px;
         height: 28px;
-        font-size: 16px;
-        padding: 5px;
-        margin-left: 5px;
+        font-size: 14px;
     }
-    
-    /* Helicopter modal styles for mobile */
+
     #helicopterModal .modal-content {
         width: auto;
         min-width: 280px;
         max-width: 360px;
-        padding: 10px;
+        padding: 12px;
         margin: 10px auto;
     }
-    
+
     #helicopterModal .helicopter-cards {
         justify-content: center;
-        gap: 6px;
+        gap: 8px;
     }
-    
+
     #helicopterModal .helicopter-card {
         padding: 8px;
-        width: 160px; /* Fixed specific width */
-        max-width: 160px;
-        margin-bottom: 8px;
+        width: 155px;
+        max-width: 155px;
     }
-    
-    /* Horizontal layout for card header on mobile */
+
     #helicopterModal .card-header {
         flex-direction: row;
         text-align: left;
         align-items: center;
     }
-    
+
     #helicopterModal .card-image {
         width: 45px;
         height: 45px;
         margin-right: 8px;
         margin-bottom: 0;
     }
-    
+
     #helicopterModal .card-title h3 {
-        font-size: 16px;
-        margin: 0 0 5px 0;
+        font-size: 13px;
+        margin: 0 0 3px 0;
     }
-    
+
     #helicopterModal .card-title p {
-        font-size: 12px;
+        font-size: 11px;
         margin: 0;
     }
-    
+
     #helicopterModal .helicopter-stats {
-        margin-top: 8px;
+        margin-top: 6px;
     }
-    
+
     #helicopterModal .stat-row {
-        justify-content: space-between;
-        margin-top: 3px;
+        margin-top: 2px;
     }
-    
+
     #helicopterModal .stat-blocks {
         gap: 2px;
     }
-    
+
     #helicopterModal .stat-block {
         width: 10px;
         height: 10px;
     }
-    
+
     #helicopterModal h3 {
-        font-size: 18px;
-        margin-bottom: 10px;
+        font-size: 16px;
+        margin-bottom: 8px;
+    }
+
+    .leaderboard-header h2 {
+        font-size: 15px;
     }
 }
 
-/* Compact styles for the helicopter cards */
 @media (max-width: 480px) {
     #helicopterModal .modal-content {
         padding: 12px;
         width: 95%;
         min-width: 280px;
     }
-    
+
     #helicopterModal .helicopter-card {
         padding: 8px;
-        border-radius: 8px;
-        margin-bottom: 8px;
-        max-width: 180px;
+        border-radius: 10px;
+        max-width: 170px;
     }
-    
+
     #helicopterModal .helicopter-options {
         margin-top: 8px;
     }
-    
+
     #helicopterModal .card-header {
         margin-bottom: 8px;
     }
-    
-    #helicopterModal .stat-row {
-        margin-top: 2px;
-    }
-    
+
     #helicopterModal .stat-label {
-        font-size: 12px;
+        font-size: 11px;
     }
-    
+
     #helicopterModal .close-icon {
         top: 5px;
         right: 8px;
         font-size: 22px;
     }
-    
-    #helicopterModal .helicopter-cards {
-        gap: 8px;
-    }
-} 
+}
