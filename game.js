@@ -1,11 +1,26 @@
+// ============================================================
+// HELICOPTER ADVENTURE V2 - Complete Visual & UX Overhaul
+// ============================================================
+
+// --- Utility: Color helpers ---
+function hslToRgb(h, s, l) {
+    s /= 100; l /= 100;
+    const k = n => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
+}
+
+// --- Particle Classes ---
 class Particle {
-    constructor(x, y) {
+    constructor(x, y, color) {
         this.x = x;
         this.y = y;
         this.size = Math.random() * 4 + 3;
-        this.speedX = -1; // Move left with game
+        this.speedX = -1;
         this.speedY = (Math.random() - 0.5) * 0.5;
         this.opacity = 0.8;
+        this.color = color || '200, 200, 200';
     }
 
     update() {
@@ -16,89 +31,184 @@ class Particle {
     }
 
     draw(ctx) {
+        if (this.opacity <= 0 || this.size <= 0) return;
         ctx.save();
-        
-        // Draw black outline
-        ctx.strokeStyle = `rgba(0, 0, 0, ${this.opacity * 0.5})`;
-        ctx.lineWidth = 0.5;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.stroke();
-        
-        // Draw smoke
-        ctx.fillStyle = `rgba(200, 200, 200, ${this.opacity})`;
+        ctx.fillStyle = `rgba(${this.color}, ${this.opacity})`;
+        ctx.shadowColor = `rgba(${this.color}, ${this.opacity * 0.5})`;
+        ctx.shadowBlur = 4;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
-        
         ctx.restore();
     }
 }
 
-class HelicopterType {
-    constructor(name, description, stats) {
-        this.name = name;
-        this.description = description;
-        this.stats = stats;
+class ExplosionParticle {
+    constructor(x, y, angle, speed) {
+        this.x = x;
+        this.y = y;
+        this.speedX = Math.cos(angle) * speed;
+        this.speedY = Math.sin(angle) * speed;
+        this.size = 4 + Math.random() * 6;
+        this.opacity = 1;
+        this.gravity = 0.15;
+        this.hue = 20 + Math.random() * 30; // orange to yellow
+        this.lightness = 50 + Math.random() * 30;
+    }
+
+    update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.speedY += this.gravity;
+        this.speedX *= 0.99;
+        this.opacity -= 0.018;
+        this.size *= 0.96;
+    }
+
+    draw(ctx) {
+        if (this.opacity <= 0 || this.size <= 0) return;
+        ctx.save();
+        const [r, g, b] = hslToRgb(this.hue, 100, this.lightness);
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${this.opacity})`;
+        ctx.shadowColor = `rgba(${r}, ${g}, ${b}, ${this.opacity * 0.6})`;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
     }
 }
 
+class ScorePopup {
+    constructor(x, y, text, color) {
+        this.x = x;
+        this.y = y;
+        this.text = text;
+        this.color = color || '#00ffaa';
+        this.opacity = 1;
+        this.scale = 0.5;
+        this.vy = -1.5;
+    }
+
+    update() {
+        this.y += this.vy;
+        this.vy *= 0.98;
+        this.opacity -= 0.02;
+        if (this.scale < 1) this.scale += 0.05;
+    }
+
+    draw(ctx) {
+        if (this.opacity <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        ctx.font = `bold ${Math.round(18 * this.scale)}px 'Orbitron', sans-serif`;
+        ctx.fillStyle = this.color;
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 10;
+        ctx.textAlign = 'center';
+        ctx.fillText(this.text, this.x, this.y);
+        ctx.restore();
+    }
+}
+
+// --- Gem (Collectible) ---
+class Gem {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.size = 10;
+        this.collected = false;
+        this.angle = Math.random() * Math.PI * 2;
+        this.bobSpeed = 0.05 + Math.random() * 0.02;
+        this.sparkleTimer = 0;
+        this.baseY = y;
+    }
+
+    update(scrollSpeed) {
+        this.x -= scrollSpeed;
+        this.angle += this.bobSpeed;
+        this.y = this.baseY + Math.sin(this.angle) * 6;
+        this.sparkleTimer++;
+    }
+
+    draw(ctx) {
+        if (this.collected) return;
+        ctx.save();
+        const glow = 0.6 + Math.sin(this.sparkleTimer * 0.1) * 0.4;
+        // Outer glow
+        ctx.shadowColor = `rgba(0, 255, 200, ${glow})`;
+        ctx.shadowBlur = 15;
+        // Diamond shape
+        ctx.fillStyle = `rgba(0, 255, 180, ${0.7 + glow * 0.3})`;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y - this.size);
+        ctx.lineTo(this.x + this.size * 0.6, this.y);
+        ctx.lineTo(this.x, this.y + this.size * 0.7);
+        ctx.lineTo(this.x - this.size * 0.6, this.y);
+        ctx.closePath();
+        ctx.fill();
+        // Inner highlight
+        ctx.fillStyle = `rgba(200, 255, 240, ${0.5 + glow * 0.3})`;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y - this.size * 0.5);
+        ctx.lineTo(this.x + this.size * 0.25, this.y);
+        ctx.lineTo(this.x, this.y + this.size * 0.3);
+        ctx.lineTo(this.x - this.size * 0.25, this.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    collidesWith(helicopter) {
+        if (this.collected) return false;
+        const dx = this.x - (helicopter.x + helicopter.width / 2);
+        const dy = this.y - (helicopter.y + helicopter.height / 2);
+        return Math.sqrt(dx * dx + dy * dy) < this.size + 20;
+    }
+}
+
+// --- Helicopter ---
 class Helicopter {
     constructor(x, y, canvas, gameAudio) {
-        // Position and canvas
         this.x = x;
         this.y = y;
         this.canvas = canvas;
         this.gameAudio = gameAudio;
-        
-        // Physics properties
         this.velocity = 0;
-        this.gravity = 0.25; // Scout default
-        this.liftForce = -5; // Scout default
+        this.gravity = 0.25;
+        this.liftForce = -5;
         this.maxLiftVelocity = 4;
         this.maxFallVelocity = 6;
-        
-        // Size
         this.width = 50;
         this.height = 20;
-        
-        // Visual properties
-        this.bodyColor = '#4682B4'; // Steel blue (Scout default)
-        this.accentColor = '#FFD700'; // Bright yellow
-        this.rotorColor = '#1A1A1A';  // Black
+        this.bodyColor = '#4682B4';
+        this.accentColor = '#FFD700';
+        this.rotorColor = '#1A1A1A';
         this.rotorSpeed = 0.5;
         this.rotorAngle = 0;
-        
-        // State
-        this.type = 'scout'; // Set Scout as default type
+        this.type = 'scout';
         this.isLifting = false;
         this.particles = [];
         this.particleTimer = 0;
         this.liftSound = null;
+        this.trailPoints = [];
+        this.verticalOffset = 0;
     }
 
     update() {
         if (this.isLifting) {
             this.velocity += this.liftForce * 0.2;
-            // Cap upward velocity
             if (this.velocity < -this.maxLiftVelocity) {
                 this.velocity = -this.maxLiftVelocity;
             }
         }
-        
-        // Apply gravity
         this.velocity += this.gravity;
-        
-        // Cap downward velocity
         if (this.velocity > this.maxFallVelocity) {
             this.velocity = this.maxFallVelocity;
         }
-        
         this.y += this.velocity;
 
-        // Apply vertical offset if it exists (for different helicopter types)
         const effectiveHeight = this.height + (this.verticalOffset || 0);
-        
         if (this.y > this.canvas.height - effectiveHeight) {
             this.y = this.canvas.height - effectiveHeight;
             this.velocity = 0;
@@ -108,20 +218,22 @@ class Helicopter {
             this.velocity = 0;
         }
 
-        // Update particles
+        // Trail
+        this.trailPoints.push({ x: this.x, y: this.y + this.height / 2, opacity: 0.6 });
+        if (this.trailPoints.length > 20) this.trailPoints.shift();
+        this.trailPoints.forEach(p => { p.opacity -= 0.03; });
+        this.trailPoints = this.trailPoints.filter(p => p.opacity > 0);
+
+        // Exhaust particles
         this.particleTimer++;
-        if (this.particleTimer > 2) { // Emit particle every 2 frames
-            this.particles.push(new Particle(this.x - 15, this.y + 15));
+        if (this.particleTimer > 2) {
+            const color = this.isLifting ? '255, 180, 50' : '180, 180, 180';
+            this.particles.push(new Particle(this.x - 15, this.y + 15, color));
             this.particleTimer = 0;
         }
-
-        // Update existing particles
         for (let i = this.particles.length - 1; i >= 0; i--) {
-            const particle = this.particles[i];
-            particle.update();
-
-            // Remove particles that are too small or transparent
-            if (particle.size <= 0.2 || particle.opacity <= 0) {
+            this.particles[i].update();
+            if (this.particles[i].size <= 0.2 || this.particles[i].opacity <= 0) {
                 this.particles.splice(i, 1);
             }
         }
@@ -129,349 +241,331 @@ class Helicopter {
 
     draw(ctx) {
         ctx.save();
-        
-        // Draw particles
-        this.particles.forEach(particle => particle.draw(ctx));
-        
-        if (this.type === 'scout') {
-            // SCOUT HELICOPTER - Sleek, aerodynamic design
-            
-            // Main body (sleek teardrop shape)
-            ctx.fillStyle = this.bodyColor;
-            ctx.beginPath();
-            ctx.moveTo(this.x + 40, this.y + this.height/2);  // Nose
-            ctx.quadraticCurveTo(
-                this.x + 45, this.y + this.height/2,  // Control point
-                this.x + 42, this.y + this.height/2 + 4  // End point
-            );
-            ctx.lineTo(this.x + 10, this.y + this.height - 2);  // Bottom curve
-            ctx.lineTo(this.x - 5, this.y + this.height/2 + 2);  // Tail bottom
-            ctx.lineTo(this.x - 5, this.y + this.height/2 - 2);  // Tail top
-            ctx.lineTo(this.x + 10, this.y + 2);  // Top curve
-            ctx.closePath();
-            ctx.fill();
 
-            // Tail boom (longer and slightly thicker)
-            ctx.fillStyle = this.bodyColor;
-            ctx.fillRect(this.x - 20, this.y + this.height/2 - 1.5, 18, 3);
-
-            // Tail fin (vertical stabilizer)
-            ctx.beginPath();
-            ctx.moveTo(this.x - 20, this.y + this.height/2 - 6);  // Top
-            ctx.lineTo(this.x - 20, this.y + this.height/2 + 6);  // Bottom
-            ctx.lineTo(this.x - 23, this.y + this.height/2);      // Back point
-            ctx.closePath();
-            ctx.fill();
-
-            // Tail rotor with motion blur effect
-            ctx.save();
-            ctx.translate(this.x - 20, this.y + this.height/2);
-            ctx.rotate(Date.now() / 100);
-            
-            // Draw multiple tail rotor lines for blur effect
-            for (let i = 0; i < 2; i++) {
-                ctx.rotate(Math.PI / 2);
-                ctx.strokeStyle = `rgba(26, 26, 26, ${0.7 - i * 0.3})`;
-                ctx.lineWidth = 1.5;
-                ctx.beginPath();
-                ctx.moveTo(-5, 0);
-                ctx.lineTo(5, 0);
-                ctx.stroke();
-            }
-            ctx.restore();
-
-            // Yellow accent stripe
-            ctx.fillStyle = this.accentColor;
-            ctx.beginPath();
-            ctx.moveTo(this.x + 38, this.y + this.height/2);
-            ctx.lineTo(this.x, this.y + this.height/2);
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = this.accentColor;
-            ctx.stroke();
-
-            // Cockpit window
-            const windowGradient = ctx.createLinearGradient(
-                this.x + 25, this.y + 4,
-                this.x + 25, this.y + this.height - 4
-            );
-            windowGradient.addColorStop(0, 'rgba(135, 206, 235, 0.9)');
-            windowGradient.addColorStop(1, 'rgba(135, 206, 235, 0.6)');
-            
-            ctx.fillStyle = windowGradient;
-            ctx.beginPath();
-            ctx.moveTo(this.x + 35, this.y + this.height/2);
-            ctx.quadraticCurveTo(
-                this.x + 30, this.y + 4,
-                this.x + 20, this.y + 6
-            );
-            ctx.lineTo(this.x + 15, this.y + this.height/2 - 2);
-            ctx.quadraticCurveTo(
-                this.x + 25, this.y + this.height - 4,
-                this.x + 35, this.y + this.height/2
-            );
-            ctx.closePath();
-            ctx.fill();
-
-            // Landing skids - single front skid only
-            ctx.strokeStyle = '#333333';
-            ctx.lineWidth = 2; // Thicker line for better visibility
-            
-            // Front skid with vertical supports - directly attached to helicopter
-            ctx.beginPath();
-            // First support - start from the bottom of the helicopter body
-            ctx.moveTo(this.x + 25, this.y + this.height - 1);
-            ctx.lineTo(this.x + 25, this.y + this.height + 5);
-            ctx.stroke();
-            
-            ctx.beginPath();
-            // Second support - start from the bottom of the helicopter body
-            ctx.moveTo(this.x + 15, this.y + this.height - 1);
-            ctx.lineTo(this.x + 15, this.y + this.height + 5);
-            ctx.stroke();
-            
-            ctx.beginPath();
-            // Horizontal skid
-            ctx.moveTo(this.x + 25, this.y + this.height + 5);
-            ctx.lineTo(this.x + 5, this.y + this.height + 5);
-            ctx.stroke();
-
-            // Main rotor
-            this.rotorAngle += this.rotorSpeed;
-            ctx.save();
-            ctx.translate(this.x + 15, this.y + 2);
-            ctx.rotate(this.rotorAngle);
-            
-            // Rotor blades with motion blur
-            for (let i = 0; i < 2; i++) {
-                ctx.rotate(Math.PI);
-                ctx.strokeStyle = `rgba(26, 26, 26, ${0.7 - i * 0.3})`;
+        // Draw trail
+        if (this.trailPoints.length > 1) {
+            for (let i = 1; i < this.trailPoints.length; i++) {
+                const p = this.trailPoints[i];
+                const prev = this.trailPoints[i - 1];
+                ctx.strokeStyle = `rgba(0, 200, 150, ${p.opacity * 0.3})`;
                 ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(this.width/2, 0);
+                ctx.moveTo(prev.x, prev.y);
+                ctx.lineTo(p.x, p.y);
                 ctx.stroke();
             }
-            
-            // Rotor hub
-            ctx.fillStyle = this.rotorColor;
-            ctx.beginPath();
-            ctx.arc(0, 0, 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-            
-        } else if (this.type === 'tanker') {
-            // TANKER HELICOPTER - Military-style heavy transport
-            
-            // Create a position with the vertical offset applied
-            const offsetY = this.y + (this.verticalOffset || 0);
-            
-            // Chunky main body - like a flying brick
-            ctx.fillStyle = this.bodyColor;
-            ctx.beginPath();
-            ctx.rect(this.x - 15, offsetY + this.height/2 - 10, 45, 20);
-            ctx.fill();
-            
-            // More pronounced nose section
-            ctx.beginPath();
-            ctx.moveTo(this.x + 30, offsetY + this.height/2 - 5);  // Top front
-            ctx.lineTo(this.x + 35, offsetY + this.height/2);      // Nose point
-            ctx.lineTo(this.x + 30, offsetY + this.height/2 + 5);  // Bottom front
-            ctx.lineTo(this.x + 25, offsetY + this.height/2 + 5);  // Bottom back
-            ctx.lineTo(this.x + 25, offsetY + this.height/2 - 5);  // Top back
-            ctx.closePath();
-            ctx.fill();
-            
-            // Larger cargo compartment with detail (military transport style)
-            ctx.fillStyle = this.bodyColor;
-            ctx.beginPath();
-            ctx.rect(this.x - 10, offsetY + this.height/2 - 20, 30, 10);
-            ctx.fill();
-            
-            // Detail panels on cargo compartment
-            ctx.strokeStyle = '#4D352F'; // Darker brown for detail
-            ctx.lineWidth = 1;
-            // Horizontal panel lines
-            ctx.beginPath();
-            ctx.moveTo(this.x - 10, offsetY + this.height/2 - 15);
-            ctx.lineTo(this.x + 20, offsetY + this.height/2 - 15);
-            ctx.stroke();
-            
-            // Vertical panel lines
-            for (let i = 0; i < 4; i++) {
-                ctx.beginPath();
-                ctx.moveTo(this.x - 5 + i * 10, offsetY + this.height/2 - 20);
-                ctx.lineTo(this.x - 5 + i * 10, offsetY + this.height/2 - 10);
-                ctx.stroke();
-            }
-            
-            // Armored cockpit - militaristic style with angular window
-            ctx.fillStyle = this.bodyColor; // Frame color
-            ctx.beginPath();
-            ctx.rect(this.x + 20, offsetY + this.height/2 - 8, 14, 16);
-            ctx.fill();
-            
-            // Angular window
-            ctx.fillStyle = 'rgba(135, 206, 235, 0.7)';
-            ctx.beginPath();
-            ctx.moveTo(this.x + 22, offsetY + this.height/2 - 6);
-            ctx.lineTo(this.x + 32, offsetY + this.height/2 - 6);
-            ctx.lineTo(this.x + 32, offsetY + this.height/2 + 6);
-            ctx.lineTo(this.x + 22, offsetY + this.height/2 + 6);
-            ctx.closePath();
-            ctx.fill();
-            
-            // Thicker, stronger tail section
-            ctx.fillStyle = this.bodyColor;
-            ctx.beginPath();
-            ctx.moveTo(this.x - 15, offsetY + this.height/2 - 5);
-            ctx.lineTo(this.x - 45, offsetY + this.height/2 - 8);
-            ctx.lineTo(this.x - 45, offsetY + this.height/2 + 8);
-            ctx.lineTo(this.x - 15, offsetY + this.height/2 + 5);
-            ctx.closePath();
-            ctx.fill();
-            
-            // Add tail detail - vertical stabilizer
-            ctx.beginPath();
-            ctx.moveTo(this.x - 40, offsetY + this.height/2 - 8);
-            ctx.lineTo(this.x - 40, offsetY + this.height/2 - 20);
-            ctx.lineTo(this.x - 35, offsetY + this.height/2 - 20);
-            ctx.lineTo(this.x - 35, offsetY + this.height/2 - 8);
-            ctx.closePath();
-            ctx.fill();
-            
-            // Tail rotor - enclosed in protective housing
-            ctx.fillStyle = '#333333';
-            ctx.beginPath();
-            ctx.rect(this.x - 52, offsetY + this.height/2 - 7, 7, 14);
-            ctx.fill();
-            
-            // Tail rotor blades (glimpse inside housing)
+        }
+
+        // Draw particles
+        this.particles.forEach(particle => particle.draw(ctx));
+
+        // Engine glow when lifting
+        if (this.isLifting) {
             ctx.save();
-            ctx.translate(this.x - 48, offsetY + this.height/2);
-            ctx.rotate(Date.now() / 150);  // Slower rotation
-            
-            ctx.strokeStyle = '#111111';
-            ctx.lineWidth = 1.5;
-            for (let i = 0; i < 2; i++) {
-                ctx.rotate(Math.PI);
-                ctx.beginPath();
-                ctx.moveTo(0, -4);
-                ctx.lineTo(0, 4);
-                ctx.stroke();
-            }
-            ctx.restore();
-            
-            // Warning stripes/markings - military style
-            ctx.fillStyle = this.accentColor;
-            
-            // Striped warning pattern on tail
-            for (let i = 0; i < 3; i++) {
-                if (i % 2 === 0) {
-                    ctx.fillRect(this.x - 35 + i*7, offsetY + this.height/2 - 2, 7, 4);
-                }
-            }
-            
-            // Nose warning stripe
-            ctx.fillRect(this.x + 25, offsetY + this.height/2 - 3, 7, 2);
-            
-            // Military-style markings/insignia
-            ctx.fillStyle = '#FFFFFF';
+            const glowSize = 12 + Math.random() * 4;
+            const gradient = ctx.createRadialGradient(
+                this.x - 10, this.y + this.height / 2, 0,
+                this.x - 10, this.y + this.height / 2, glowSize
+            );
+            gradient.addColorStop(0, 'rgba(255, 200, 50, 0.6)');
+            gradient.addColorStop(0.5, 'rgba(255, 120, 20, 0.3)');
+            gradient.addColorStop(1, 'rgba(255, 80, 0, 0)');
+            ctx.fillStyle = gradient;
             ctx.beginPath();
-            ctx.arc(this.x, offsetY + this.height/2 - 15, 3, 0, Math.PI * 2);
+            ctx.arc(this.x - 10, this.y + this.height / 2, glowSize, 0, Math.PI * 2);
             ctx.fill();
-            
-            // Heavy-duty landing gear (thicker, with hydraulics)
-            ctx.strokeStyle = '#333333';
-            ctx.lineWidth = 3;
-            
-            // Front landing gear with hydraulic detail
-            ctx.beginPath();
-            ctx.moveTo(this.x + 20, offsetY + this.height/2 + 10);
-            ctx.lineTo(this.x + 20, offsetY + this.height/2 + 17);
-            ctx.lineTo(this.x + 5, offsetY + this.height/2 + 17);
-            ctx.stroke();
-            
-            // Hydraulic detail for front gear
-            ctx.beginPath();
-            ctx.moveTo(this.x + 18, offsetY + this.height/2 + 10);
-            ctx.lineTo(this.x + 16, offsetY + this.height/2 + 14);
-            ctx.stroke();
-            
-            // Rear landing gear with hydraulic detail
-            ctx.beginPath();
-            ctx.moveTo(this.x - 10, offsetY + this.height/2 + 10);
-            ctx.lineTo(this.x - 10, offsetY + this.height/2 + 17);
-            ctx.lineTo(this.x - 25, offsetY + this.height/2 + 17);
-            ctx.stroke();
-            
-            // Hydraulic detail for rear gear
-            ctx.beginPath();
-            ctx.moveTo(this.x - 12, offsetY + this.height/2 + 10);
-            ctx.lineTo(this.x - 14, offsetY + this.height/2 + 14);
-            ctx.stroke();
-            
-            // Main rotor - heavier blades, slower rotation
-            this.rotorAngle += this.rotorSpeed * 0.8; // Even slower for tanker
-            ctx.save();
-            ctx.translate(this.x + 5, offsetY + this.height/2 - 20);
-            
-            // Rotor hub and shaft - larger, industrial looking
-            ctx.fillStyle = '#333333';
-            // Shaft
-            ctx.fillRect(-3, -8, 6, 8);
-            // Hub
-            ctx.fillRect(-6, -2, 12, 4);
-            
-            // Heavy-duty rotor blades - thicker, more substantial
-            for (let i = 0; i < 2; i++) {
-                ctx.save();
-                ctx.rotate(this.rotorAngle + i * Math.PI);
-                
-                // Blade with taper
-                ctx.fillStyle = '#333333';
-                ctx.beginPath();
-                ctx.moveTo(-3, 0);
-                ctx.lineTo(-this.width/2 - 5, -2);
-                ctx.lineTo(-this.width/2 - 5, 2);
-                ctx.lineTo(3, 0);
-                ctx.closePath();
-                ctx.fill();
-                
-                // Do the same for the other side
-                ctx.beginPath();
-                ctx.moveTo(3, 0);
-                ctx.lineTo(this.width/2 + 5, -2);
-                ctx.lineTo(this.width/2 + 5, 2);
-                ctx.lineTo(-3, 0);
-                ctx.closePath();
-                ctx.fill();
-                
-                ctx.restore();
-            }
             ctx.restore();
         }
-        
+
+        if (this.type === 'scout') {
+            this.drawScout(ctx);
+        } else if (this.type === 'tanker') {
+            this.drawTanker(ctx);
+        }
+
+        ctx.restore();
+    }
+
+    drawScout(ctx) {
+        // Main body with gradient
+        const bodyGrad = ctx.createLinearGradient(this.x - 5, this.y, this.x + 40, this.y + this.height);
+        bodyGrad.addColorStop(0, '#5a9fd4');
+        bodyGrad.addColorStop(1, '#2a5f8f');
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        ctx.moveTo(this.x + 40, this.y + this.height / 2);
+        ctx.quadraticCurveTo(this.x + 45, this.y + this.height / 2, this.x + 42, this.y + this.height / 2 + 4);
+        ctx.lineTo(this.x + 10, this.y + this.height - 2);
+        ctx.lineTo(this.x - 5, this.y + this.height / 2 + 2);
+        ctx.lineTo(this.x - 5, this.y + this.height / 2 - 2);
+        ctx.lineTo(this.x + 10, this.y + 2);
+        ctx.closePath();
+        ctx.fill();
+
+        // Tail boom
+        ctx.fillStyle = bodyGrad;
+        ctx.fillRect(this.x - 20, this.y + this.height / 2 - 1.5, 18, 3);
+
+        // Tail fin
+        ctx.beginPath();
+        ctx.moveTo(this.x - 20, this.y + this.height / 2 - 6);
+        ctx.lineTo(this.x - 20, this.y + this.height / 2 + 6);
+        ctx.lineTo(this.x - 23, this.y + this.height / 2);
+        ctx.closePath();
+        ctx.fill();
+
+        // Tail rotor
+        ctx.save();
+        ctx.translate(this.x - 20, this.y + this.height / 2);
+        ctx.rotate(Date.now() / 80);
+        for (let i = 0; i < 2; i++) {
+            ctx.rotate(Math.PI / 2);
+            ctx.strokeStyle = `rgba(26, 26, 26, ${0.7 - i * 0.3})`;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(-5, 0);
+            ctx.lineTo(5, 0);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // Accent stripe with glow
+        ctx.strokeStyle = this.accentColor;
+        ctx.shadowColor = this.accentColor;
+        ctx.shadowBlur = 4;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(this.x + 38, this.y + this.height / 2);
+        ctx.lineTo(this.x, this.y + this.height / 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Cockpit window with gradient
+        const windowGrad = ctx.createLinearGradient(this.x + 25, this.y + 4, this.x + 25, this.y + this.height - 4);
+        windowGrad.addColorStop(0, 'rgba(135, 220, 255, 0.9)');
+        windowGrad.addColorStop(1, 'rgba(80, 180, 220, 0.6)');
+        ctx.fillStyle = windowGrad;
+        ctx.beginPath();
+        ctx.moveTo(this.x + 35, this.y + this.height / 2);
+        ctx.quadraticCurveTo(this.x + 30, this.y + 4, this.x + 20, this.y + 6);
+        ctx.lineTo(this.x + 15, this.y + this.height / 2 - 2);
+        ctx.quadraticCurveTo(this.x + 25, this.y + this.height - 4, this.x + 35, this.y + this.height / 2);
+        ctx.closePath();
+        ctx.fill();
+
+        // Landing skids
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(this.x + 25, this.y + this.height - 1);
+        ctx.lineTo(this.x + 25, this.y + this.height + 5);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(this.x + 15, this.y + this.height - 1);
+        ctx.lineTo(this.x + 15, this.y + this.height + 5);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(this.x + 25, this.y + this.height + 5);
+        ctx.lineTo(this.x + 5, this.y + this.height + 5);
+        ctx.stroke();
+
+        // Main rotor
+        this.rotorAngle += this.rotorSpeed;
+        ctx.save();
+        ctx.translate(this.x + 15, this.y + 2);
+        ctx.rotate(this.rotorAngle);
+        for (let i = 0; i < 2; i++) {
+            ctx.rotate(Math.PI);
+            ctx.strokeStyle = `rgba(26, 26, 26, ${0.7 - i * 0.3})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(this.width / 2, 0);
+            ctx.stroke();
+        }
+        ctx.fillStyle = this.rotorColor;
+        ctx.beginPath();
+        ctx.arc(0, 0, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    drawTanker(ctx) {
+        const offsetY = this.y + (this.verticalOffset || 0);
+
+        // Body with gradient
+        const bodyGrad = ctx.createLinearGradient(this.x - 15, offsetY, this.x + 30, offsetY + 20);
+        bodyGrad.addColorStop(0, '#6d4c3a');
+        bodyGrad.addColorStop(1, '#3d2517');
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        ctx.rect(this.x - 15, offsetY + this.height / 2 - 10, 45, 20);
+        ctx.fill();
+
+        // Nose
+        ctx.beginPath();
+        ctx.moveTo(this.x + 30, offsetY + this.height / 2 - 5);
+        ctx.lineTo(this.x + 35, offsetY + this.height / 2);
+        ctx.lineTo(this.x + 30, offsetY + this.height / 2 + 5);
+        ctx.lineTo(this.x + 25, offsetY + this.height / 2 + 5);
+        ctx.lineTo(this.x + 25, offsetY + this.height / 2 - 5);
+        ctx.closePath();
+        ctx.fill();
+
+        // Cargo compartment
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        ctx.rect(this.x - 10, offsetY + this.height / 2 - 20, 30, 10);
+        ctx.fill();
+
+        // Detail panels
+        ctx.strokeStyle = '#4D352F';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(this.x - 10, offsetY + this.height / 2 - 15);
+        ctx.lineTo(this.x + 20, offsetY + this.height / 2 - 15);
+        ctx.stroke();
+        for (let i = 0; i < 4; i++) {
+            ctx.beginPath();
+            ctx.moveTo(this.x - 5 + i * 10, offsetY + this.height / 2 - 20);
+            ctx.lineTo(this.x - 5 + i * 10, offsetY + this.height / 2 - 10);
+            ctx.stroke();
+        }
+
+        // Cockpit
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        ctx.rect(this.x + 20, offsetY + this.height / 2 - 8, 14, 16);
+        ctx.fill();
+
+        // Window
+        ctx.fillStyle = 'rgba(135, 206, 235, 0.7)';
+        ctx.beginPath();
+        ctx.moveTo(this.x + 22, offsetY + this.height / 2 - 6);
+        ctx.lineTo(this.x + 32, offsetY + this.height / 2 - 6);
+        ctx.lineTo(this.x + 32, offsetY + this.height / 2 + 6);
+        ctx.lineTo(this.x + 22, offsetY + this.height / 2 + 6);
+        ctx.closePath();
+        ctx.fill();
+
+        // Tail section
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        ctx.moveTo(this.x - 15, offsetY + this.height / 2 - 5);
+        ctx.lineTo(this.x - 45, offsetY + this.height / 2 - 8);
+        ctx.lineTo(this.x - 45, offsetY + this.height / 2 + 8);
+        ctx.lineTo(this.x - 15, offsetY + this.height / 2 + 5);
+        ctx.closePath();
+        ctx.fill();
+
+        // Vertical stabilizer
+        ctx.beginPath();
+        ctx.moveTo(this.x - 40, offsetY + this.height / 2 - 8);
+        ctx.lineTo(this.x - 40, offsetY + this.height / 2 - 20);
+        ctx.lineTo(this.x - 35, offsetY + this.height / 2 - 20);
+        ctx.lineTo(this.x - 35, offsetY + this.height / 2 - 8);
+        ctx.closePath();
+        ctx.fill();
+
+        // Tail rotor housing
+        ctx.fillStyle = '#333333';
+        ctx.beginPath();
+        ctx.rect(this.x - 52, offsetY + this.height / 2 - 7, 7, 14);
+        ctx.fill();
+        ctx.save();
+        ctx.translate(this.x - 48, offsetY + this.height / 2);
+        ctx.rotate(Date.now() / 120);
+        ctx.strokeStyle = '#111111';
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 2; i++) {
+            ctx.rotate(Math.PI);
+            ctx.beginPath();
+            ctx.moveTo(0, -4);
+            ctx.lineTo(0, 4);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // Warning stripes with glow
+        ctx.fillStyle = this.accentColor;
+        ctx.shadowColor = this.accentColor;
+        ctx.shadowBlur = 3;
+        for (let i = 0; i < 3; i++) {
+            if (i % 2 === 0) {
+                ctx.fillRect(this.x - 35 + i * 7, offsetY + this.height / 2 - 2, 7, 4);
+            }
+        }
+        ctx.fillRect(this.x + 25, offsetY + this.height / 2 - 3, 7, 2);
+        ctx.shadowBlur = 0;
+
+        // Insignia
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(this.x, offsetY + this.height / 2 - 15, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Landing gear
+        ctx.strokeStyle = '#333333';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(this.x + 20, offsetY + this.height / 2 + 10);
+        ctx.lineTo(this.x + 20, offsetY + this.height / 2 + 17);
+        ctx.lineTo(this.x + 5, offsetY + this.height / 2 + 17);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(this.x + 18, offsetY + this.height / 2 + 10);
+        ctx.lineTo(this.x + 16, offsetY + this.height / 2 + 14);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(this.x - 10, offsetY + this.height / 2 + 10);
+        ctx.lineTo(this.x - 10, offsetY + this.height / 2 + 17);
+        ctx.lineTo(this.x - 25, offsetY + this.height / 2 + 17);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(this.x - 12, offsetY + this.height / 2 + 10);
+        ctx.lineTo(this.x - 14, offsetY + this.height / 2 + 14);
+        ctx.stroke();
+
+        // Main rotor
+        this.rotorAngle += this.rotorSpeed * 0.8;
+        ctx.save();
+        ctx.translate(this.x + 5, offsetY + this.height / 2 - 20);
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(-3, -8, 6, 8);
+        ctx.fillRect(-6, -2, 12, 4);
+        for (let i = 0; i < 2; i++) {
+            ctx.save();
+            ctx.rotate(this.rotorAngle + i * Math.PI);
+            ctx.fillStyle = '#333333';
+            ctx.beginPath();
+            ctx.moveTo(-3, 0);
+            ctx.lineTo(-this.width / 2 - 5, -2);
+            ctx.lineTo(-this.width / 2 - 5, 2);
+            ctx.lineTo(3, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(3, 0);
+            ctx.lineTo(this.width / 2 + 5, -2);
+            ctx.lineTo(this.width / 2 + 5, 2);
+            ctx.lineTo(-3, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
         ctx.restore();
     }
 
     drawBody(ctx) {
-        // This is a simplified version of the draw method that only draws the helicopter body
-        // without game-specific elements like rotor animation, hitbox, etc.
-        
         if (this.type === 'scout') {
-            // Scout - sleek and aerodynamic
             ctx.fillStyle = this.bodyColor;
             ctx.beginPath();
             ctx.ellipse(0, 0, 15, 8, 0, 0, Math.PI * 2);
             ctx.fill();
-            
-            // Draw cockpit
             ctx.fillStyle = '#ADD8E6';
             ctx.beginPath();
             ctx.ellipse(5, -2, 7, 4, 0, 0, Math.PI * 2);
             ctx.fill();
-            
-            // Draw tail
             ctx.fillStyle = this.bodyColor;
             ctx.beginPath();
             ctx.moveTo(-10, 0);
@@ -479,109 +573,49 @@ class Helicopter {
             ctx.lineTo(-25, 5);
             ctx.closePath();
             ctx.fill();
-            
-            // Draw landing skids - single front skid only
             ctx.strokeStyle = '#333333';
             ctx.lineWidth = 1.5;
-            
-            // Front skid with vertical supports - moved forward
-            ctx.beginPath();
-            ctx.moveTo(15, 10);  // First support
-            ctx.lineTo(15, 14);
-            ctx.stroke();
-            
-            ctx.beginPath();
-            ctx.moveTo(5, 10);   // Second support
-            ctx.lineTo(5, 14);
-            ctx.stroke();
-            
-            ctx.beginPath();    // Horizontal skid
-            ctx.moveTo(15, 14);
-            ctx.lineTo(-5, 14);
-            ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(15, 10); ctx.lineTo(15, 14); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(5, 10); ctx.lineTo(5, 14); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(15, 14); ctx.lineTo(-5, 14); ctx.stroke();
         } else if (this.type === 'tanker') {
-            // Tanker - military transport style
-            
-            // Apply the vertical offset
             ctx.translate(0, this.verticalOffset || 0);
-            
-            // Main body - chunky rectangular shape
             ctx.fillStyle = this.bodyColor;
             ctx.fillRect(-15, -10, 40, 20);
-            
-            // Nose section
             ctx.beginPath();
-            ctx.moveTo(25, -5);  // Top front
-            ctx.lineTo(30, 0);   // Nose point
-            ctx.lineTo(25, 5);   // Bottom front
-            ctx.lineTo(20, 5);   // Bottom back
-            ctx.lineTo(20, -5);  // Top back
-            ctx.closePath();
-            ctx.fill();
-            
-            // Cargo compartment on top
+            ctx.moveTo(25, -5); ctx.lineTo(30, 0); ctx.lineTo(25, 5); ctx.lineTo(20, 5); ctx.lineTo(20, -5);
+            ctx.closePath(); ctx.fill();
             ctx.fillRect(-10, -20, 30, 10);
-            
-            // Cockpit window
             ctx.fillStyle = 'rgba(135, 206, 235, 0.7)';
             ctx.fillRect(18, -6, 10, 12);
-            
-            // Tail section
             ctx.fillStyle = this.bodyColor;
             ctx.beginPath();
-            ctx.moveTo(-15, -5);
-            ctx.lineTo(-35, -8);
-            ctx.lineTo(-35, 8);
-            ctx.lineTo(-15, 5);
-            ctx.closePath();
-            ctx.fill();
-            
-            // Vertical stabilizer
+            ctx.moveTo(-15, -5); ctx.lineTo(-35, -8); ctx.lineTo(-35, 8); ctx.lineTo(-15, 5);
+            ctx.closePath(); ctx.fill();
             ctx.beginPath();
-            ctx.moveTo(-30, -8);
-            ctx.lineTo(-30, -18);
-            ctx.lineTo(-25, -18);
-            ctx.lineTo(-25, -8);
-            ctx.closePath();
-            ctx.fill();
-            
-            // Warning stripes
+            ctx.moveTo(-30, -8); ctx.lineTo(-30, -18); ctx.lineTo(-25, -18); ctx.lineTo(-25, -8);
+            ctx.closePath(); ctx.fill();
             ctx.fillStyle = this.accentColor;
             ctx.fillRect(-25, -2, 5, 4);
-            
-            // Military insignia
             ctx.fillStyle = '#FFFFFF';
-            ctx.beginPath();
-            ctx.arc(0, -15, 3, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(0, -15, 3, 0, Math.PI * 2); ctx.fill();
         }
-        
-        // Draw rotor base (common for both types)
         ctx.fillStyle = '#333';
-        ctx.beginPath();
-        ctx.arc(0, -8, 2, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Draw static rotor (common for both types)
+        ctx.beginPath(); ctx.arc(0, -8, 2, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = '#333';
         ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(-20, -8);
-        ctx.lineTo(20, -8);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-20, -8); ctx.lineTo(20, -8); ctx.stroke();
     }
 
     lift() {
         this.isLifting = true;
-        // Play helicopter sound when lifting
         if (!this.liftSound && this.gameAudio) {
-            this.liftSound = this.gameAudio.play('helicopter', true, this.type);  // Pass helicopter type
+            this.liftSound = this.gameAudio.play('helicopter', true, this.type);
         }
     }
 
     stopLift() {
         this.isLifting = false;
-        // Stop helicopter sound when not lifting
         if (this.liftSound && this.gameAudio) {
             this.gameAudio.stopSound(this.liftSound);
             this.liftSound = null;
@@ -590,84 +624,59 @@ class Helicopter {
 
     setType(type) {
         this.type = type;
-        
-        // Update helicopter properties based on type
         if (type === 'scout') {
-            // Scout helicopter - sleek and aerodynamic
-            this.bodyColor = '#4682B4'; // Steel blue
-            this.accentColor = '#FFD700'; // Bright yellow
+            this.bodyColor = '#4682B4';
+            this.accentColor = '#FFD700';
             this.gravity = 0.20;
             this.liftForce = -4;
             this.maxLiftVelocity = 4;
-            
-            // Standard size
-            this.width = 50; 
+            this.width = 50;
             this.height = 20;
-            
-            // Standard vertical offset (for helipad positioning)
             this.verticalOffset = 0;
         } else if (type === 'tanker') {
-            // Tanker helicopter - heavier and bulkier
-            this.bodyColor = '#5D4037'; // Dark brown
-            this.accentColor = '#FF6F00'; // Orange warning color
+            this.bodyColor = '#5D4037';
+            this.accentColor = '#FF6F00';
             this.gravity = 0.35;
             this.liftForce = -3;
             this.maxLiftVelocity = 7;
-            
-            // Larger size for tanker
             this.width = 70;
             this.height = 30;
-            
-            // Make it sit higher on the helipad
             this.verticalOffset = -6;
         }
     }
 }
 
+// --- Obstacle ---
 class Obstacle {
     constructor(canvas, score, isMobile, previousObstacle = null) {
         this.canvas = canvas;
         this.width = 100 + Math.random() * 60;
         this.x = canvas.width;
-        this.isMobile = isMobile; // Store isMobile for minimum height check
-        
-        // Calculate difficulty level (every 250 points instead of 50)
+        this.isMobile = isMobile;
+
         const difficultyLevel = Math.floor(score / 250);
-        
-        // Reduce gap size as difficulty increases
-        // Increase base gap sizes for mobile
-        const baseMinGap = isMobile ? 190 : 130; // Increased from 160 to 190
-        const baseMaxGap = isMobile ? 240 : 180; // Increased from 210 to 240
+        const baseMinGap = isMobile ? 190 : 130;
+        const baseMaxGap = isMobile ? 240 : 180;
         const gapReduction = Math.min(difficultyLevel * 30, 40);
-        
-        // Calculate initial gaps
-        let minGap = Math.max(baseMinGap - gapReduction, isMobile ? 80 : 40); // Higher minimum for mobile (increased from 60 to 80)
-        let maxGap = Math.max(baseMaxGap - gapReduction, isMobile ? 110 : 70); // Higher maximum for mobile (increased from 90 to 110)
-        
-        // Hard mode after score 1000 - make it less harsh on mobile
+
+        let minGap = Math.max(baseMinGap - gapReduction, isMobile ? 80 : 40);
+        let maxGap = Math.max(baseMaxGap - gapReduction, isMobile ? 110 : 70);
+
         if (score > 1000) {
-            minGap = Math.floor(minGap * (isMobile ? 0.7 : 0.5)); // Less reduction on mobile (70% vs 50%)
-            maxGap = Math.floor(maxGap * (isMobile ? 0.7 : 0.5)); // Less reduction on mobile (70% vs 50%)
+            minGap = Math.floor(minGap * (isMobile ? 0.7 : 0.5));
+            maxGap = Math.floor(maxGap * (isMobile ? 0.7 : 0.5));
         }
-        
+
         this.gap = minGap + Math.random() * (maxGap - minGap);
-        
-        // Divide canvas into three sections for gap placement
+
         const safeZone = 80;
         const playableHeight = canvas.height - (2 * safeZone);
         const sectionHeight = playableHeight / 3;
-        
-        // Randomly choose which section to put the gap in
         const section = Math.floor(Math.random() * 3);
-        
-        // Calculate gap position based on section
         const sectionStart = safeZone + (section * sectionHeight);
         const sectionEnd = sectionStart + sectionHeight - this.gap;
-        
-        // Place gap randomly within the chosen section
         this.gapPosition = sectionStart + Math.random() * (sectionEnd - sectionStart);
-        
-        // Generate jagged points with guaranteed minimum height for top obstacle
+
         this.topPoints = this.generateJaggedPoints(true);
         this.bottomPoints = this.generateJaggedPoints(false);
     }
@@ -676,39 +685,29 @@ class Obstacle {
         const points = [];
         const segments = 8;
         const segmentWidth = this.width / segments;
-        
-        // Define minimum obstacle height in pixels
-        const minObstacleHeight = this.isMobile ? 60 : 30; // Higher minimum on mobile
-        
+        const minObstacleHeight = this.isMobile ? 60 : 30;
+
         for (let i = 0; i <= segments; i++) {
             const x = this.x + (i * segmentWidth);
-            let y;
-            
-            // Use same logic for both top and bottom, just flip for bottom
-            const maxExtend = isTop ? 
-                (this.gapPosition - 20) : 
+            const maxExtend = isTop ?
+                (this.gapPosition - 20) :
                 (this.canvas.height - (this.gapPosition + this.gap) - 20);
-                
             const minHeight = maxExtend * 0.4;
-            
+
             let taperFactor = 1;
             if (i <= 1) taperFactor = i / 1;
             if (i >= segments - 1) taperFactor = (segments - i) / 1;
-            
-            // Calculate height with original formula
+
             let calculatedHeight = (minHeight + (maxExtend - minHeight) * Math.random()) * taperFactor;
-            
-            // Enforce minimum height (with tapering at edges)
             calculatedHeight = Math.max(calculatedHeight, minObstacleHeight * taperFactor);
-            
-            // For bottom formations, flip the Y coordinate
+
+            let y;
             if (!isTop) {
                 y = this.canvas.height - calculatedHeight;
             } else {
-                y = calculatedHeight;  // Keep top formations as they are
+                y = calculatedHeight;
             }
-            
-            // Add intermediate points for smoother shapes
+
             if (i > 0) {
                 const prevX = points[points.length - 1].x;
                 const prevY = points[points.length - 1].y;
@@ -717,29 +716,29 @@ class Obstacle {
                 const midY = (prevY + y) / 2 + (Math.random() - 0.5) * variance;
                 points.push({ x: midX, y: midY });
             }
-            
             points.push({ x, y });
         }
         return points;
     }
 
     update(scrollSpeed) {
-        // Move obstacle left
         this.x -= scrollSpeed;
-        
-        // Update all points
-        this.topPoints.forEach(point => {
-            point.x -= scrollSpeed;
-        });
-        this.bottomPoints.forEach(point => {
-            point.x -= scrollSpeed;
-        });
+        this.topPoints.forEach(point => { point.x -= scrollSpeed; });
+        this.bottomPoints.forEach(point => { point.x -= scrollSpeed; });
     }
 
     draw(ctx) {
-        ctx.fillStyle = '#2E8B57';
-        
-        // Draw top stalactites
+        // Top formation with gradient and glow
+        const topGrad = ctx.createLinearGradient(0, 0, 0, this.gapPosition);
+        topGrad.addColorStop(0, '#0d3320');
+        topGrad.addColorStop(0.7, '#1a6b42');
+        topGrad.addColorStop(1, '#22c070');
+        ctx.fillStyle = topGrad;
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 220, 130, 0.4)';
+        ctx.shadowBlur = 12;
+
         ctx.beginPath();
         ctx.moveTo(this.topPoints[0].x, 0);
         for (let i = 0; i < this.topPoints.length; i++) {
@@ -747,7 +746,6 @@ class Obstacle {
             if (i === 0) {
                 ctx.lineTo(point.x, point.y);
             } else {
-                // Create curved connections between points
                 const prevPoint = this.topPoints[i - 1];
                 const cpX = (prevPoint.x + point.x) / 2;
                 ctx.quadraticCurveTo(cpX, prevPoint.y, point.x, point.y);
@@ -755,8 +753,19 @@ class Obstacle {
         }
         ctx.lineTo(this.topPoints[this.topPoints.length - 1].x, 0);
         ctx.fill();
-        
-        // Draw bottom stalagmites
+        ctx.restore();
+
+        // Bottom formation with gradient and glow
+        const bottomGrad = ctx.createLinearGradient(0, this.gapPosition + this.gap, 0, this.canvas.height);
+        bottomGrad.addColorStop(0, '#22c070');
+        bottomGrad.addColorStop(0.3, '#1a6b42');
+        bottomGrad.addColorStop(1, '#0d3320');
+        ctx.fillStyle = bottomGrad;
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 220, 130, 0.4)';
+        ctx.shadowBlur = 12;
+
         ctx.beginPath();
         ctx.moveTo(this.bottomPoints[0].x, this.canvas.height);
         for (let i = 0; i < this.bottomPoints.length; i++) {
@@ -771,6 +780,7 @@ class Obstacle {
         }
         ctx.lineTo(this.bottomPoints[this.bottomPoints.length - 1].x, this.canvas.height);
         ctx.fill();
+        ctx.restore();
     }
 
     collidesWith(helicopter) {
@@ -779,24 +789,17 @@ class Obstacle {
         const hw = helicopter.width;
         const hh = helicopter.height;
 
-        // Basic horizontal collision check
-        if (hx + hw < this.x || hx > this.x + this.width) {
-            return false;
-        }
+        if (hx + hw < this.x || hx > this.x + this.width) return false;
 
-        // Find the relevant segment for collision checking
         const segments = this.topPoints.length - 1;
         const segmentWidth = this.width / segments;
         const relativeX = hx - this.x;
         const segment = Math.min(Math.floor(relativeX / segmentWidth), segments - 1);
-        
         if (segment < 0) return false;
 
-        // Get the y-values at this x-position by interpolating between points
         const topY = this.interpolateY(this.topPoints[segment], this.topPoints[segment + 1], hx);
         const bottomY = this.interpolateY(this.bottomPoints[segment], this.bottomPoints[segment + 1], hx);
 
-        // Check if helicopter intersects with obstacles
         return hy < topY || (hy + hh) > bottomY;
     }
 
@@ -806,29 +809,25 @@ class Obstacle {
     }
 }
 
+// --- Background & Edge Formations ---
 class BackgroundFormation {
     constructor(canvas) {
         this.canvas = canvas;
-        this.width = 80 + Math.random() * 120; // Much wider (was 40 + random * 60)
+        this.width = 80 + Math.random() * 120;
         this.x = canvas.width;
-        this.height = 60 + Math.random() * 120; // Much taller (was 30 + random * 80)
+        this.height = 60 + Math.random() * 120;
         this.isTop = Math.random() > 0.5;
         this.points = this.generatePoints();
     }
 
     generatePoints() {
         const points = [];
-        const segments = 4 + Math.floor(Math.random() * 3); // Fewer segments for bigger shapes
+        const segments = 4 + Math.floor(Math.random() * 3);
         const segmentWidth = this.width / segments;
-        
         for (let i = 0; i <= segments; i++) {
             const x = this.x + (i * segmentWidth);
-            let height = this.height * (0.6 + Math.random() * 0.4); // More consistent height
-            
-            if (i === 0 || i === segments) {
-                height *= 0.2; // More aggressive tapering at ends
-            }
-            
+            let height = this.height * (0.6 + Math.random() * 0.4);
+            if (i === 0 || i === segments) height *= 0.2;
             points.push({
                 x,
                 y: this.isTop ? height : this.canvas.height - height
@@ -838,23 +837,18 @@ class BackgroundFormation {
     }
 
     update(scrollSpeed) {
-        this.x -= scrollSpeed * 0.3; // Slower parallax effect
-        this.points.forEach(point => {
-            point.x -= scrollSpeed * 0.3;
-        });
+        this.x -= scrollSpeed * 0.3;
+        this.points.forEach(point => { point.x -= scrollSpeed * 0.3; });
     }
 
     draw(ctx) {
-        // Much darker shade of green
-        ctx.fillStyle = '#0A3015';
-        
+        ctx.fillStyle = '#071a0e';
         ctx.beginPath();
         if (this.isTop) {
             ctx.moveTo(this.points[0].x, 0);
             this.points.forEach((point, i) => {
-                if (i === 0) {
-                    ctx.lineTo(point.x, point.y);
-                } else {
+                if (i === 0) { ctx.lineTo(point.x, point.y); }
+                else {
                     const prevPoint = this.points[i - 1];
                     const cpX = (prevPoint.x + point.x) / 2;
                     ctx.quadraticCurveTo(cpX, prevPoint.y, point.x, point.y);
@@ -864,9 +858,8 @@ class BackgroundFormation {
         } else {
             ctx.moveTo(this.points[0].x, this.canvas.height);
             this.points.forEach((point, i) => {
-                if (i === 0) {
-                    ctx.lineTo(point.x, point.y);
-                } else {
+                if (i === 0) { ctx.lineTo(point.x, point.y); }
+                else {
                     const prevPoint = this.points[i - 1];
                     const cpX = (prevPoint.x + point.x) / 2;
                     ctx.quadraticCurveTo(cpX, prevPoint.y, point.x, point.y);
@@ -885,15 +878,13 @@ class EdgeFormation {
         this.isTop = isTop;
         this.maxHeight = 15;
         this.segments = 20;
-        this.segmentWidth = 50; // Smaller segments for more variation
+        this.segmentWidth = 50;
         this.points = [];
         this.generateInitialPoints();
     }
 
     generateInitialPoints() {
-        // Generate points across entire canvas width plus buffer
         const totalSegments = Math.ceil(this.canvas.width / this.segmentWidth) + 2;
-        
         for (let i = 0; i <= totalSegments; i++) {
             const x = i * this.segmentWidth;
             const height = 5 + Math.random() * 10;
@@ -905,7 +896,6 @@ class EdgeFormation {
     }
 
     addNewPoint() {
-        // Add new point at the right edge
         const x = this.points[this.points.length - 1].x + this.segmentWidth;
         const height = 5 + Math.random() * 10;
         this.points.push({
@@ -915,32 +905,35 @@ class EdgeFormation {
     }
 
     update(scrollSpeed) {
-        // Move all points left at full speed (removed the * 0.5)
-        this.points.forEach(point => {
-            point.x -= scrollSpeed;  // Changed from scrollSpeed * 0.5
-        });
-
-        // Remove points that are off screen
+        this.points.forEach(point => { point.x -= scrollSpeed; });
         while (this.points.length > 0 && this.points[0].x + this.segmentWidth < 0) {
             this.points.shift();
         }
-
-        // Add new points as needed
         while (this.points[this.points.length - 1].x < this.canvas.width + this.segmentWidth) {
             this.addNewPoint();
         }
     }
 
     draw(ctx) {
-        ctx.fillStyle = '#2E8B57';
+        // Edge formations with glow
+        const grad = this.isTop
+            ? ctx.createLinearGradient(0, 0, 0, 20)
+            : ctx.createLinearGradient(0, this.canvas.height - 20, 0, this.canvas.height);
+
+        grad.addColorStop(0, this.isTop ? '#0d3320' : '#1a7a4a');
+        grad.addColorStop(1, this.isTop ? '#1a7a4a' : '#0d3320');
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 200, 120, 0.3)';
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = grad;
         ctx.beginPath();
-        
+
         if (this.isTop) {
             ctx.moveTo(this.points[0].x, 0);
             this.points.forEach((point, i) => {
-                if (i === 0) {
-                    ctx.lineTo(point.x, point.y);
-                } else {
+                if (i === 0) { ctx.lineTo(point.x, point.y); }
+                else {
                     const prevPoint = this.points[i - 1];
                     const cpX = (prevPoint.x + point.x) / 2;
                     ctx.quadraticCurveTo(cpX, prevPoint.y, point.x, point.y);
@@ -950,9 +943,8 @@ class EdgeFormation {
         } else {
             ctx.moveTo(this.points[0].x, this.canvas.height);
             this.points.forEach((point, i) => {
-                if (i === 0) {
-                    ctx.lineTo(point.x, point.y);
-                } else {
+                if (i === 0) { ctx.lineTo(point.x, point.y); }
+                else {
                     const prevPoint = this.points[i - 1];
                     const cpX = (prevPoint.x + point.x) / 2;
                     ctx.quadraticCurveTo(cpX, prevPoint.y, point.x, point.y);
@@ -962,9 +954,11 @@ class EdgeFormation {
         }
         ctx.closePath();
         ctx.fill();
+        ctx.restore();
     }
 }
 
+// --- Helipad ---
 class Helipad {
     constructor(canvas, offset = 0) {
         this.canvas = canvas;
@@ -975,47 +969,41 @@ class Helipad {
     }
 
     update(scrollSpeed) {
-        // Move helipad with game scroll
         this.x -= scrollSpeed;
     }
 
     draw(ctx) {
-        // Draw helipad base structure
-        ctx.fillStyle = '#444444';
-        
-        // Frame dimensions
+        ctx.fillStyle = '#555';
         const frameThickness = 5;
         const frameHeight = 15;
-        
-        // Left vertical support
         ctx.fillRect(this.x + 10, this.y + this.height, frameThickness, frameHeight);
-        
-        // Right vertical support
         ctx.fillRect(this.x + this.width - 15, this.y + this.height, frameThickness, frameHeight);
-        
-        // Bottom horizontal support
         ctx.fillRect(this.x, this.y + this.height + frameHeight, this.width, frameThickness);
-        
-        // Draw main helipad
-        ctx.fillStyle = '#333333';
+
+        // Main pad with subtle gradient
+        const padGrad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.height);
+        padGrad.addColorStop(0, '#444');
+        padGrad.addColorStop(1, '#333');
+        ctx.fillStyle = padGrad;
         ctx.fillRect(this.x, this.y, this.width, this.height);
-        
-        // Draw landing markers
-        ctx.fillStyle = '#FFFF00';
+
+        // Landing markers with glow
+        ctx.save();
+        ctx.shadowColor = 'rgba(255, 255, 0, 0.5)';
+        ctx.shadowBlur = 6;
+        ctx.fillStyle = '#FFD700';
         const markerWidth = 10;
         const markerHeight = 5;
         const spacing = 20;
-        
         for (let i = 0; i < 5; i++) {
             ctx.fillRect(
-                this.x + 10 + (i * spacing), 
-                this.y + (this.height - markerHeight) / 2, 
-                markerWidth, 
+                this.x + 10 + (i * spacing),
+                this.y + (this.height - markerHeight) / 2,
+                markerWidth,
                 markerHeight
             );
         }
-        
-        // Removed the H marking for better visibility
+        ctx.restore();
     }
 
     isOffScreen() {
@@ -1032,35 +1020,33 @@ class Helipad {
     }
 }
 
+// --- GameAudio ---
 class GameAudio {
     constructor() {
         this.sounds = {};
         this.isMuted = false;
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
         this.masterGain = this.audioContext.createGain();
-        this.masterGain.gain.value = 0.5;  // Set initial volume to 50%
+        this.masterGain.gain.value = 0.5;
         this.masterGain.connect(this.audioContext.destination);
-        
-        // Create HTML5 Audio elements for one-off sounds
+
         this.crashSound = new Audio('sounds/crash.wav');
         this.crashSound.volume = 0.5;
-        this.difficultySound = new Audio('sounds/difficulty-increase.wav');  // Updated name
+        this.difficultySound = new Audio('sounds/difficulty-increase.wav');
         this.difficultySound.volume = 0.5;
         this.highScoreSound = new Audio('sounds/highscore.flac');
         this.highScoreSound.volume = 0.5;
-        
-        // Keep helicopter sounds in Web Audio API for looping
+
         this.soundFiles = {
             helicopter: 'sounds/helicopter-loop.wav',
             heavyHelicopter: 'sounds/heavy-helicopter.wav'
         };
-        
+
         this.loadSounds();
         this.setupMuteButton();
         this.setupHelicopterButton();
         this.setupVolumeControl();
 
-        // Add event listener for user interaction
         document.addEventListener('click', () => this.resumeAudio(), { once: true });
         document.addEventListener('keydown', () => this.resumeAudio(), { once: true });
         document.addEventListener('touchstart', () => this.resumeAudio(), { once: true });
@@ -1070,63 +1056,45 @@ class GameAudio {
         if (this.audioContext.state === 'suspended') {
             await this.audioContext.resume();
         }
-        // Also try to play a silent sound to unlock audio on iOS
         this.crashSound.play().then(() => this.crashSound.pause()).catch(() => {});
-        this.difficultySound.play().then(() => this.difficultySound.pause()).catch(() => {});  // Updated name
+        this.difficultySound.play().then(() => this.difficultySound.pause()).catch(() => {});
         this.highScoreSound.play().then(() => this.highScoreSound.pause()).catch(() => {});
     }
 
     loadSounds() {
         const loadPromises = Object.entries(this.soundFiles).map(async ([key, path]) => {
             const response = await fetch(path);
-            if (!response.ok) {
-                throw new Error(`Failed to load ${key}: ${response.statusText}`);
-            }
+            if (!response.ok) throw new Error(`Failed to load ${key}: ${response.statusText}`);
             const arrayBuffer = await response.arrayBuffer();
             const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
             this.sounds[key] = audioBuffer;
-            console.log(`Loaded sound: ${key}`);
         });
-
-        Promise.all(loadPromises)
-            .then(() => {
-                console.log('All sounds loaded');
-            })
-            .catch((error) => {
-                console.error('Error loading sounds:', error);
-            });
+        Promise.all(loadPromises).catch((error) => {
+            console.error('Error loading sounds:', error);
+        });
     }
-    
+
     play(soundName, loop = false, helicopterType = 'scout') {
         if (this.isMuted) return null;
+        if (this.audioContext.state === 'suspended') this.resumeAudio();
 
-        // Resume audio context if needed
-        if (this.audioContext.state === 'suspended') {
-            this.resumeAudio();
-        }
-
-        // Handle one-off sounds with HTML5 Audio
-        switch(soundName) {
+        switch (soundName) {
             case 'crash':
                 this.crashSound.currentTime = 0;
                 this.crashSound.play().catch(e => {
-                    console.error('Error playing crash sound:', e);
                     this.resumeAudio().then(() => this.crashSound.play());
                 });
                 return null;
-            case 'difficulty':  // Updated name
+            case 'difficulty':
                 this.difficultySound.currentTime = 0;
-                this.difficultySound.play().catch(e => console.error('Error playing difficulty sound:', e));
+                this.difficultySound.play().catch(() => {});
                 return null;
             case 'highScore':
                 this.highScoreSound.currentTime = 0;
-                this.highScoreSound.play().catch(e => console.error('Error playing highscore sound:', e));
+                this.highScoreSound.play().catch(() => {});
                 return null;
             case 'helicopter':
-                // Use Web Audio API for looping helicopter sound
-                // Choose the appropriate helicopter sound based on type
                 const soundKey = helicopterType === 'tanker' ? 'heavyHelicopter' : 'helicopter';
-                
                 if (!this.sounds[soundKey]) return null;
                 const source = this.audioContext.createBufferSource();
                 source.buffer = this.sounds[soundKey];
@@ -1136,28 +1104,18 @@ class GameAudio {
                 return source;
         }
     }
-    
+
     setupMuteButton() {
         const muteButton = document.querySelector('.utility-button[data-action="mute"]');
         if (muteButton) {
-            // Set up click handler for mute button
             muteButton.onclick = () => {
-                // Toggle mute state
                 this.isMuted = !this.isMuted;
-                
-                // Get volume from slider
                 const volumeSlider = document.getElementById('volumeSlider');
                 const volume = volumeSlider ? volumeSlider.value / 100 : 0.5;
-                
-                // Apply mute/unmute to audio context
                 this.masterGain.gain.value = this.isMuted ? 0 : volume;
-                
-                // Update HTML5 Audio elements if they exist
                 if (this.crashSound) this.crashSound.muted = this.isMuted;
                 if (this.difficultySound) this.difficultySound.muted = this.isMuted;
                 if (this.highScoreSound) this.highScoreSound.muted = this.isMuted;
-                
-                // Update button icon
                 muteButton.textContent = this.isMuted ? '🔇' : '🔊';
             };
         }
@@ -1168,10 +1126,8 @@ class GameAudio {
         volumeSlider.addEventListener('input', (e) => {
             const volume = e.target.value / 100;
             this.masterGain.gain.value = this.isMuted ? 0 : volume;
-            
-            // Also update HTML5 Audio elements
             this.crashSound.volume = volume;
-            this.difficultySound.volume = volume;  // Updated name
+            this.difficultySound.volume = volume;
             this.highScoreSound.volume = volume;
         });
     }
@@ -1180,64 +1136,40 @@ class GameAudio {
         const helicopterButton = document.querySelector('.utility-button[data-action="helicopter"]');
         const modal = document.getElementById('helicopterModal');
         const closeButton = document.getElementById('closeHelicopterModal');
-        
+
         if (helicopterButton) {
-            // Set up click handler to show helicopter modal
             helicopterButton.onclick = () => {
                 if (modal) {
-                    // Populate options before showing the modal
-                    this.populateHelicopterOptions();
+                    this.populateHelicopterOptions && this.populateHelicopterOptions();
                     modal.style.display = 'flex';
                 }
             };
         }
-        
         if (closeButton) {
-            // Set up close button handler
-            closeButton.onclick = () => {
-                if (modal) {
-                    modal.style.display = 'none';
-                }
-            };
+            closeButton.onclick = () => { if (modal) modal.style.display = 'none'; };
         }
-        
-        // Add click handler to close modal when clicking outside
         if (modal) {
             modal.addEventListener('click', (event) => {
-                // Check if the click was directly on the modal background
-                // (not on any of its children)
-                if (event.target === modal) {
-                    modal.style.display = 'none';
-                }
+                if (event.target === modal) modal.style.display = 'none';
             });
         }
     }
 
-    // Add back stopSound method
     stopSound(source) {
         if (source) {
-            try {
-                source.stop();
-            } catch (error) {
-                console.error('Error stopping sound:', error);
-            }
+            try { source.stop(); } catch (error) {}
         }
     }
 }
 
+// --- Main Game Class ---
 class Game {
     constructor() {
-        // Add a reliable mobile detector as a property of the Game class
         this.isMobile = this.detectMobile();
-        
-        // Add map type support
-        this.availableMaps = ['cave', 'cityscape'];
-        this.selectedMapType = 'cave'; // Default map
-        
-        // Initialize gameAudio before all other properties that might use it
+        this.selectedMapType = 'cave';
         this.gameAudio = new GameAudio();
-        
-        // Initialize Firebase
+
+        // Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCOxjS5m_37mMElI8NzWhIFmhMxeaQ4dkI",
             authDomain: "helicopter-game-d0856.firebaseapp.com",
@@ -1248,93 +1180,89 @@ class Game {
             appId: "1:864747316887:web:17f6645e324a9a08a82bd2",
             measurementId: "G-34DGMK4F52"
         };
-        
-        // Initialize Firebase with compat version
         firebase.initializeApp(firebaseConfig);
         this.database = firebase.database();
-        
-        // Initialize empty leaderboard array
         this.leaderboard = [];
-        
-        // Initialize canvas and other game properties
+
+        // Canvas
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
-        
-        // Set target FPS to 60
         this.fps = 60;
         this.frameInterval = 1000 / this.fps;
         this.lastTime = 0;
-        
-        // Base obstacle distance we want to maintain (in pixels)
-        // Increase distance for mobile devices
-        const targetObstacleDistance = this.isMobile ? 550 : 400; // Increased from 500 to 550 for mobile
-        
+
+        // Setup canvas size and speeds
+        const targetObstacleDistance = this.isMobile ? 550 : 400;
         if (this.isMobile) {
             this.canvas.width = 600;
             this.canvas.height = 600;
             this.canvas.style.width = '100%';
             this.canvas.style.height = '100%';
-            this.scrollSpeed = 8;  // Doubled from 4 to 8
-            this.baseScrollSpeed = 480;  // 8 * 60 (pixels per second)
-            
-            // Calculate the desktop pixel distance between obstacles
+            this.scrollSpeed = 8;
+            this.baseScrollSpeed = 480;
             const desktopScrollSpeed = 9;
-            const desktopObstacleInterval = Math.round(targetObstacleDistance / desktopScrollSpeed); // ~44
-            const desktopPixelDistance = desktopScrollSpeed * desktopObstacleInterval; // ~400px
-            
-            // Adjust mobile intervals to maintain the same visual distance
-            this.obstacleInterval = Math.round(desktopPixelDistance / this.scrollSpeed); // ~50 frames
-            this.bgFormationInterval = Math.round(this.obstacleInterval / 2); // ~25 frames
+            const desktopObstacleInterval = Math.round(targetObstacleDistance / desktopScrollSpeed);
+            const desktopPixelDistance = desktopScrollSpeed * desktopObstacleInterval;
+            this.obstacleInterval = Math.round(desktopPixelDistance / this.scrollSpeed);
+            this.bgFormationInterval = Math.round(this.obstacleInterval / 2);
         } else {
             this.canvas.width = 800;
             this.canvas.height = 400;
             this.scrollSpeed = 9;
-            this.baseScrollSpeed = 540;  // 9 * 60 (pixels per second)
-            this.obstacleInterval = Math.round(targetObstacleDistance / this.scrollSpeed);  // ≈ 44
-            this.bgFormationInterval = Math.round(this.obstacleInterval / 2);  // ≈ 22
+            this.baseScrollSpeed = 540;
+            this.obstacleInterval = Math.round(targetObstacleDistance / this.scrollSpeed);
+            this.bgFormationInterval = Math.round(this.obstacleInterval / 2);
         }
-        
-        // Pass gameAudio when creating helicopter
+
+        // Game objects
         this.helicopter = new Helicopter(130, this.canvas.height / 2, this.canvas, this.gameAudio);
-        // Set the default selected helicopter type
         this.selectedHelicopterType = 'scout';
-        
-        // Rest of constructor code...
         this.gameState = 'start';
         this.isGameOver = false;
         this.score = 0;
-        this.highScore = 0;  // Raw high score (will be divided by 10 for display)
-        
+        this.highScore = 0;
         this.obstacles = [];
         this.obstacleTimer = 0;
-        
-        // Add flag to track space key state
+        this.gems = [];
+        this.gemTimer = 0;
+        this.scorePopups = [];
         this.isSpaceKeyDown = false;
         this.waitForSpaceRelease = false;
-        
-        // Load leaderboard after initialization
+
+        // Screen shake
+        this.shakeAmount = 0;
+        this.shakeDuration = 0;
+
+        // Star field
+        this.stars = [];
+        for (let i = 0; i < 60; i++) {
+            this.stars.push({
+                x: Math.random() * this.canvas.width,
+                y: Math.random() * this.canvas.height,
+                size: 0.5 + Math.random() * 1.5,
+                twinkleSpeed: 0.02 + Math.random() * 0.03,
+                twinklePhase: Math.random() * Math.PI * 2
+            });
+        }
+
         this.loadLeaderboard();
-        
-        // Update text colors for better visibility on dark background
         this.textColor = '#FFFFFF';
-        
-        // Update event listeners
+
+        // Keyboard input
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
                 this.isSpaceKeyDown = true;
-                
                 if (this.gameState === 'start') {
                     this.gameState = 'takeoff';
-                    this.helicopter.y = this.canvas.height - 50; // Adjusted height to match raised helipad
+                    this.helicopter.y = this.canvas.height - 50;
                 } else if (this.gameState === 'takeoff') {
                     this.gameState = 'playing';
                     this.helicopter.lift();
                 } else if (this.gameState === 'gameover') {
-                    // Only restart if we're not waiting for space release
                     if (!this.waitForSpaceRelease) {
                         this.reset();
                         this.gameState = 'takeoff';
-                        this.helicopter.y = this.canvas.height - 50; // Adjusted height to match raised helipad
+                        this.helicopter.y = this.canvas.height - 50;
                     }
                 } else {
                     this.helicopter.lift();
@@ -1345,18 +1273,15 @@ class Game {
         document.addEventListener('keyup', (e) => {
             if (e.code === 'Space') {
                 this.isSpaceKeyDown = false;
-                this.waitForSpaceRelease = false; // Reset the wait flag when space is released
+                this.waitForSpaceRelease = false;
                 this.helicopter.stopLift();
             }
         });
 
-        // Prevent default touch behaviors
+        // Touch input
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            
-            // Track touch state similar to space key
             this.isSpaceKeyDown = true;
-            
             if (this.gameState === 'start') {
                 this.gameState = 'takeoff';
                 this.helicopter.y = this.canvas.height - 50;
@@ -1364,7 +1289,6 @@ class Game {
                 this.gameState = 'playing';
                 this.helicopter.lift();
             } else if (this.gameState === 'gameover') {
-                // Only restart if we're not waiting for touch release
                 if (!this.waitForSpaceRelease) {
                     this.reset();
                     this.gameState = 'takeoff';
@@ -1377,15 +1301,11 @@ class Game {
 
         this.canvas.addEventListener('touchend', (e) => {
             e.preventDefault();
-            
-            // Reset touch state similar to space key
             this.isSpaceKeyDown = false;
             this.waitForSpaceRelease = false;
-            
             this.helicopter.stopLift();
         }, { passive: false });
 
-        // Prevent scrolling when touching the canvas
         this.canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
         }, { passive: false });
@@ -1395,149 +1315,56 @@ class Game {
 
         this.backgroundFormations = [];
         this.bgFormationTimer = 0;
-
-        // Replace ConstantFormation with EdgeFormation
         this.edgeFormationTop = new EdgeFormation(this.canvas, true);
         this.edgeFormationBottom = new EdgeFormation(this.canvas, false);
-
-        // Create helipad with offset
         this.helipad = new Helipad(this.canvas, 30);
 
-        this.fps = 60;
-        this.frameInterval = 1000 / this.fps;
-        this.lastTime = 0;
-        this.baseScrollSpeed = 180;  // Pixels per second (previous speed * 60)
-
-        // Add FPS monitoring
+        this.targetFps = 60;
+        this.speedScale = 1;
         this.frameCount = 0;
         this.lastFpsUpdate = 0;
         this.currentFps = 0;
-        
-        // Scale factors for different frame rates
-        this.targetFps = 60;
-        this.speedScale = 1;
 
-        // Initialize GameAudio
-        this.helicopterSound = null;  // Store reference to looping helicopter sound
-
-        // Add milestone tracking
+        this.helicopterSound = null;
         this.lastMilestone = 0;
-
-        // Add explosion particles
         this.explosionParticles = [];
 
-        // Set up helicopter button
         this.setupHelicopterButton();
-
-        // Create decorative elements for the home screen
         this.createHomeScreenElements();
     }
 
-    setupCanvasSize() {
-        const oldWidth = this.canvas.width;
-        
-        // Base obstacle distance we want to maintain (in pixels)
-        // Increase distance for mobile devices
-        const targetObstacleDistance = this.isMobile ? 550 : 400; // Increased from 500 to 550 for mobile
-        
-        if (this.isMobile) {
-            this.canvas.width = 600;
-            this.canvas.height = 600;
-            this.canvas.style.width = '100%';
-            this.canvas.style.height = '100%';
-            this.scrollSpeed = 8;  // Doubled from 4 to 8
-            this.baseScrollSpeed = 480;  // 8 * 60 (pixels per second)
-            
-            // Calculate the desktop pixel distance between obstacles
-            const desktopScrollSpeed = 9;
-            const desktopObstacleInterval = Math.round(targetObstacleDistance / desktopScrollSpeed); // ~44
-            const desktopPixelDistance = desktopScrollSpeed * desktopObstacleInterval; // ~400px
-            
-            // Adjust mobile intervals to maintain the same visual distance
-            this.obstacleInterval = Math.round(desktopPixelDistance / this.scrollSpeed); // ~50 frames
-            this.bgFormationInterval = Math.round(this.obstacleInterval / 2); // ~25 frames
-        } else {
-            this.canvas.width = 800;
-            this.canvas.height = 400;
-            this.scrollSpeed = 9;
-            this.baseScrollSpeed = 540;  // 9 * 60 (pixels per second)
-            
-            // Update intervals for desktop
-            this.obstacleInterval = Math.round(targetObstacleDistance / this.scrollSpeed);  // ≈ 44
-            this.bgFormationInterval = Math.round(this.obstacleInterval / 2);  // ≈ 22
-        }
-
-        // Adjust helicopter position proportionally if canvas size changed
-        if (this.helicopter) {
-            this.helicopter.x = this.helicopter.x * (this.canvas.width / oldWidth);
-        }
+    detectMobile() {
+        return (window.innerWidth < 400) || ('ontouchstart' in window) ||
+               (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0);
     }
 
-    // Add resize handler
-    handleResize() {
-        const oldWidth = this.canvas.width;
-        const oldHeight = this.canvas.height;
-        
-        // Update mobile detection when window is resized
-        this.isMobile = this.detectMobile();
-        
-        this.setupCanvasSize();
-        
-        // Scale game objects' positions
-        const scaleX = this.canvas.width / oldWidth;
-        const scaleY = this.canvas.height / oldHeight;
-        
-        this.helicopter.x *= scaleX;
-        this.helicopter.y *= scaleY;
-        
-        // Scale other game objects similarly...
-    }
-
-    updateFps(timestamp) {
-        this.frameCount++;
-        
-        // Update FPS every second
-        if (timestamp - this.lastFpsUpdate >= 1000) {
-            this.currentFps = this.frameCount;
-            this.frameCount = 0;
-            this.lastFpsUpdate = timestamp;
-            
-            // Adjust speed scale based on frame rate
-            this.speedScale = this.targetFps / Math.max(this.currentFps, 1);
-            
-            // Remove or comment out the console.log
-            // console.log(`FPS: ${this.currentFps}, Speed Scale: ${this.speedScale.toFixed(2)}`);
-        }
-    }
-
-    gameLoop(timestamp) {
-        // Calculate time elapsed
-        const elapsed = timestamp - this.lastTime;
-
-        // Only update if enough time has passed
-        if (elapsed > this.frameInterval) {
-            // Update last time, accounting for any excess time
-            this.lastTime = timestamp - (elapsed % this.frameInterval);
-            
-            this.update();
-            this.draw();
-        }
-        
-        requestAnimationFrame((time) => this.gameLoop(time));
-    }
-
-    // In the Game class, add a method to get the current scroll speed
     getScrollSpeed() {
-        // Return the raw scroll speed without any scaling
         return this.scrollSpeed;
     }
 
-    // Then modify the update method to use this getter
+    start() {
+        requestAnimationFrame((time) => this.gameLoop(time));
+    }
+
+    gameLoop(timestamp) {
+        const elapsed = timestamp - this.lastTime;
+        if (elapsed > this.frameInterval) {
+            this.lastTime = timestamp - (elapsed % this.frameInterval);
+            this.update();
+            this.draw();
+        }
+        requestAnimationFrame((time) => this.gameLoop(time));
+    }
+
     update() {
-        // Get the current scroll speed for consistent movement
         const currentScrollSpeed = this.getScrollSpeed();
-        
-        // Update ambient particles in all game states
+
+        // Update stars twinkle
+        this.stars.forEach(s => {
+            s.twinklePhase += s.twinkleSpeed;
+        });
+
+        // Update ambient particles
         this.ambientParticles.forEach(p => {
             p.y -= p.speed;
             if (p.y < 0) {
@@ -1545,101 +1372,121 @@ class Game {
                 p.x = Math.random() * this.canvas.width;
             }
         });
-        
+
+        // Update score popups
+        for (let i = this.scorePopups.length - 1; i >= 0; i--) {
+            this.scorePopups[i].update();
+            if (this.scorePopups[i].opacity <= 0) this.scorePopups.splice(i, 1);
+        }
+
+        // Screen shake decay
+        if (this.shakeDuration > 0) {
+            this.shakeDuration--;
+            this.shakeAmount *= 0.9;
+        } else {
+            this.shakeAmount = 0;
+        }
+
         if (this.gameState === 'start') {
-            // Update home screen background formations
-            this.homeBackgroundFormations.forEach(formation => {
-                formation.update(currentScrollSpeed * 0.5); // Slower movement for aesthetic effect
-            });
-            
-            // Update home screen edge formations
+            this.homeBackgroundFormations.forEach(f => f.update(currentScrollSpeed * 0.5));
             this.homeEdgeFormationTop.update(currentScrollSpeed * 0.5);
             this.homeEdgeFormationBottom.update(currentScrollSpeed * 0.5);
-            
-            // Update decorative helicopter (just for animation, no physics)
             if (this.decorativeHelicopter) {
-                // Make the helicopter bob up and down slightly
                 this.decorativeHelicopter.y += Math.sin(Date.now() / 300) * 0.5;
             }
-            
             return;
         }
-        
+
         if (this.gameState === 'playing') {
-            // Update background formations
+            // Background formations
             this.bgFormationTimer++;
             if (this.bgFormationTimer > this.bgFormationInterval) {
                 this.backgroundFormations.push(new BackgroundFormation(this.canvas));
                 this.bgFormationTimer = 0;
             }
-
-            // Update and remove off-screen background formations
             for (let i = this.backgroundFormations.length - 1; i >= 0; i--) {
-                const formation = this.backgroundFormations[i];
-                formation.update(currentScrollSpeed);
-                if (formation.x + formation.width < 0) {
+                this.backgroundFormations[i].update(currentScrollSpeed);
+                if (this.backgroundFormations[i].x + this.backgroundFormations[i].width < 0) {
                     this.backgroundFormations.splice(i, 1);
                 }
             }
 
             if (!this.isGameOver) {
                 this.helicopter.update();
-                
-                // Check for floor/ceiling collisions
-                if (this.helicopter.y <= 0 || 
+
+                // Floor/ceiling collision
+                if (this.helicopter.y <= 0 ||
                     this.helicopter.y >= this.canvas.height - this.helicopter.height) {
                     this.handleCollision();
                     return;
                 }
-                
-                // Update obstacles
+
+                // Obstacles
                 this.obstacleTimer++;
                 if (this.obstacleTimer > this.obstacleInterval) {
-                    // Get last obstacle but don't use it for positioning yet - just keeping parameter
                     const lastObstacle = this.obstacles.length > 0 ? this.obstacles[this.obstacles.length - 1] : null;
                     this.obstacles.push(new Obstacle(this.canvas, Math.floor(this.score / 10), this.isMobile, lastObstacle));
                     this.obstacleTimer = 0;
                 }
 
-                // Update and check each obstacle
                 for (let i = this.obstacles.length - 1; i >= 0; i--) {
                     const obstacle = this.obstacles[i];
                     obstacle.update(currentScrollSpeed);
-
-                    // Remove obstacles that are off screen
                     if (obstacle.x + obstacle.width < 0) {
                         this.obstacles.splice(i, 1);
                         continue;
                     }
-
-                    // Check for collisions
                     if (obstacle.collidesWith(this.helicopter)) {
                         this.handleCollision();
                     }
                 }
 
-                // Check for milestone (every 250 points up to 1000)
-                const gameScore = Math.floor(this.score / 10);  // Convert to game score
-                const currentMilestone = Math.floor(gameScore / 250) * 250;  // Every 250 points of game score
+                // Gems
+                this.gemTimer++;
+                if (this.gemTimer > this.obstacleInterval * 0.6) {
+                    // Place gem in the middle of the gap of the next obstacle area
+                    const gemY = this.canvas.height * 0.2 + Math.random() * this.canvas.height * 0.6;
+                    this.gems.push(new Gem(this.canvas.width + 50, gemY));
+                    this.gemTimer = 0;
+                }
+
+                for (let i = this.gems.length - 1; i >= 0; i--) {
+                    this.gems[i].update(currentScrollSpeed);
+                    if (this.gems[i].x < -20) {
+                        this.gems.splice(i, 1);
+                        continue;
+                    }
+                    if (this.gems[i].collidesWith(this.helicopter)) {
+                        this.gems[i].collected = true;
+                        this.score += 250; // +25 displayed score
+                        this.scorePopups.push(new ScorePopup(
+                            this.gems[i].x, this.gems[i].y, '+25', '#00ffcc'
+                        ));
+                        this.gems.splice(i, 1);
+                    }
+                }
+
+                // Milestone check
+                const gameScore = Math.floor(this.score / 10);
+                const currentMilestone = Math.floor(gameScore / 250) * 250;
                 if (currentMilestone > this.lastMilestone && currentMilestone <= 1000) {
-                    this.gameAudio.play('difficulty');  // Updated name
+                    this.gameAudio.play('difficulty');
                     this.lastMilestone = currentMilestone;
                 }
 
-                // Update score based on frame rate
-                this.score += (60 / this.fps);  // Normalize score increase to 60fps
+                this.score += (60 / this.fps);
             }
 
-            // Update edge formations
+            // Edge formations
             this.edgeFormationTop.update(currentScrollSpeed);
             this.edgeFormationBottom.update(currentScrollSpeed);
 
-            // Update helipad if it exists
+            // Helipad
             if (this.helipad && !this.helipad.isOffScreen()) {
                 this.helipad.update(currentScrollSpeed);
             }
-            
-            // Update explosion particles
+
+            // Explosion particles
             for (let i = this.explosionParticles.length - 1; i >= 0; i--) {
                 this.explosionParticles[i].update();
                 if (this.explosionParticles[i].opacity <= 0) {
@@ -1650,164 +1497,241 @@ class Game {
     }
 
     draw() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
+        const ctx = this.ctx;
+
+        // Apply screen shake
+        ctx.save();
+        if (this.shakeAmount > 0) {
+            const dx = (Math.random() - 0.5) * this.shakeAmount;
+            const dy = (Math.random() - 0.5) * this.shakeAmount;
+            ctx.translate(dx, dy);
+        }
+
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Dynamic gradient background based on score
+        const difficulty = Math.min(Math.floor(this.score / 10) / 1500, 1);
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+        if (difficulty < 0.5) {
+            bgGrad.addColorStop(0, this.lerpColor('#0a0a2e', '#1a0a2e', difficulty * 2));
+            bgGrad.addColorStop(1, this.lerpColor('#0a1a1a', '#1a0a1a', difficulty * 2));
+        } else {
+            bgGrad.addColorStop(0, this.lerpColor('#1a0a2e', '#2a0a1a', (difficulty - 0.5) * 2));
+            bgGrad.addColorStop(1, this.lerpColor('#1a0a1a', '#1a0505', (difficulty - 0.5) * 2));
+        }
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Star field
+        this.stars.forEach(s => {
+            const twinkle = 0.3 + Math.sin(s.twinklePhase) * 0.3;
+            ctx.fillStyle = `rgba(255, 255, 255, ${twinkle})`;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
         if (this.gameState === 'start') {
-            // Draw home screen elements
             this.drawHomeScreenElements();
-            
-            // Draw title and instructions
-            this.ctx.fillStyle = this.textColor;
-            this.ctx.textAlign = 'center';
-            
-            // Add a subtle text shadow
-            this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-            this.ctx.shadowBlur = 5;
-            this.ctx.shadowOffsetX = 2;
-            this.ctx.shadowOffsetY = 2;
-            
-            this.ctx.font = '48px Arial';
-            this.ctx.fillText('Helicopter Game', 
-                this.canvas.width / 2, 
-                this.canvas.height / 2 - 40);
-            
-            this.ctx.font = '24px Arial';
-            this.ctx.fillText(this.isMobile ? 'Tap to Start' : 'Press Space to Start', 
-                this.canvas.width / 2, 
-                this.canvas.height / 2 + 20);
-            
-            // Reset shadow
-            this.ctx.shadowColor = 'transparent';
-            this.ctx.shadowBlur = 0;
-            this.ctx.shadowOffsetX = 0;
-            this.ctx.shadowOffsetY = 0;
-            
-            this.ctx.textAlign = 'left';
+            this.drawTitle(ctx);
+            ctx.restore();
             return;
         }
-        
+
         if (this.gameState === 'playing' || this.gameState === 'gameover' || this.gameState === 'takeoff') {
-            // Draw background formations first
-            this.backgroundFormations.forEach(formation => formation.draw(this.ctx));
-            
-            // Draw edge formations
-            this.edgeFormationTop.draw(this.ctx);
-            this.edgeFormationBottom.draw(this.ctx);
-            
-            // Draw ambient particles
+            // Background formations
+            this.backgroundFormations.forEach(f => f.draw(ctx));
+
+            // Edge formations
+            this.edgeFormationTop.draw(ctx);
+            this.edgeFormationBottom.draw(ctx);
+
+            // Ambient particles
             this.ambientParticles.forEach(p => {
-                this.ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
-                this.ctx.beginPath();
-                this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                this.ctx.fill();
+                ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
             });
-            
-            // Draw helipad if it exists and is on screen
+
+            // Helipad
             if (this.helipad && !this.helipad.isOffScreen()) {
-                this.helipad.draw(this.ctx);
+                this.helipad.draw(ctx);
             }
-            
-            // Then draw main obstacles and helicopter
-            this.obstacles.forEach(obstacle => obstacle.draw(this.ctx));
-            this.helicopter.draw(this.ctx);
+
+            // Obstacles, gems, helicopter
+            this.obstacles.forEach(o => o.draw(ctx));
+            this.gems.forEach(g => g.draw(ctx));
+            this.helicopter.draw(ctx);
+
+            // Score popups
+            this.scorePopups.forEach(p => p.draw(ctx));
         }
-        
-        // Draw scores with adjusted positioning for mobile
+
+        // HUD
         if (this.gameState === 'playing' || this.gameState === 'gameover') {
-            const padding = this.isMobile ? 20 : 10;  // More padding on mobile
-            
-            this.ctx.fillStyle = this.textColor;
-            this.ctx.font = '20px Arial';
-            
-            // Draw current score
-            this.ctx.textAlign = 'left';
-            this.ctx.fillText(`Score: ${Math.floor(this.score / 10)}`, padding, 30);
-            
-            // Draw high score with more space from right edge
-            this.ctx.textAlign = 'right';
-            this.ctx.fillText(
-                `High Score: ${Math.floor(this.highScore / 10)}`, 
-                this.canvas.width - padding, 
-                30
-            );
-            this.ctx.textAlign = 'left';  // Reset alignment
+            const padding = this.isMobile ? 20 : 10;
+            ctx.fillStyle = this.textColor;
+            ctx.font = "bold 18px 'Orbitron', sans-serif";
+            ctx.textAlign = 'left';
+
+            // Score with glow
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 200, 150, 0.5)';
+            ctx.shadowBlur = 6;
+            ctx.fillText(`${Math.floor(this.score / 10)}`, padding, 30);
+            ctx.restore();
+
+            ctx.textAlign = 'right';
+            ctx.font = "14px 'Inter', sans-serif";
+            ctx.fillStyle = '#888';
+            ctx.fillText(`Best: ${Math.floor(this.highScore / 10)}`, this.canvas.width - padding, 30);
+            ctx.textAlign = 'left';
         }
 
-        // Draw takeoff instructions
+        // Takeoff instructions
         if (this.gameState === 'takeoff') {
-            this.ctx.fillStyle = this.textColor;
-            this.ctx.font = '24px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText(this.isMobile ? 'Tap to Take Off' : 'Press Space to Take Off', 
-                this.canvas.width / 2, 
-                this.canvas.height / 2);
-            this.ctx.textAlign = 'left';
+            ctx.fillStyle = this.textColor;
+            ctx.font = "20px 'Orbitron', sans-serif";
+            ctx.textAlign = 'center';
+            const alpha = 0.5 + Math.sin(Date.now() / 400) * 0.5;
+            ctx.globalAlpha = alpha;
+            ctx.fillText(this.isMobile ? 'Tap to Take Off' : 'Press Space to Take Off',
+                this.canvas.width / 2, this.canvas.height / 2);
+            ctx.globalAlpha = 1;
+            ctx.textAlign = 'left';
         }
 
-        // Draw game over message
+        // Game over
         if (this.gameState === 'gameover') {
-            this.ctx.fillStyle = this.textColor;
-            this.ctx.font = '48px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText('Game Over!', 
-                this.canvas.width / 2, 
-                this.canvas.height / 2);
-            this.ctx.font = '24px Arial';
-            this.ctx.fillText('Press Space to Restart', 
-                this.canvas.width / 2, 
-                this.canvas.height / 2 + 40);
-            this.ctx.textAlign = 'left';
+            // Dark overlay
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+            ctx.textAlign = 'center';
+
+            // Game over text with glow
+            ctx.save();
+            ctx.shadowColor = 'rgba(255, 80, 50, 0.6)';
+            ctx.shadowBlur = 20;
+            ctx.fillStyle = '#ff6644';
+            ctx.font = "bold 42px 'Orbitron', sans-serif";
+            ctx.fillText('GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 20);
+            ctx.restore();
+
+            // Score
+            ctx.fillStyle = '#fff';
+            ctx.font = "18px 'Orbitron', sans-serif";
+            ctx.fillText(`Score: ${Math.floor(this.score / 10)}`, this.canvas.width / 2, this.canvas.height / 2 + 20);
+
+            // Restart prompt
+            const alpha = 0.4 + Math.sin(Date.now() / 500) * 0.4;
+            ctx.globalAlpha = alpha;
+            ctx.font = "16px 'Inter', sans-serif";
+            ctx.fillStyle = '#ccc';
+            ctx.fillText(this.isMobile ? 'Tap to Restart' : 'Press Space to Restart',
+                this.canvas.width / 2, this.canvas.height / 2 + 55);
+            ctx.globalAlpha = 1;
+            ctx.textAlign = 'left';
         }
 
-        // Draw explosion particles
-        if (this.explosionParticles.length > 0) {
-            this.explosionParticles.forEach((particle, index) => {
-                particle.update();
-                particle.draw(this.ctx);
-                if (particle.opacity <= 0) {
-                    this.explosionParticles.splice(index, 1);
-                }
-            });
+        // Explosion particles
+        this.explosionParticles.forEach(p => p.draw(ctx));
+
+        ctx.restore(); // end screen shake
+    }
+
+    drawTitle(ctx) {
+        ctx.textAlign = 'center';
+
+        // Title with glow
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 200, 150, 0.6)';
+        ctx.shadowBlur = 20;
+        ctx.fillStyle = '#fff';
+        ctx.font = "bold 40px 'Orbitron', sans-serif";
+        ctx.fillText('HELICOPTER', this.canvas.width / 2, this.canvas.height / 2 - 50);
+        ctx.font = "bold 28px 'Orbitron', sans-serif";
+        ctx.fillStyle = '#00c896';
+        ctx.fillText('ADVENTURE', this.canvas.width / 2, this.canvas.height / 2 - 10);
+        ctx.restore();
+
+        // Start prompt with breathing animation
+        const alpha = 0.4 + Math.sin(Date.now() / 600) * 0.4;
+        ctx.globalAlpha = alpha;
+        ctx.font = "16px 'Inter', sans-serif";
+        ctx.fillStyle = '#aaa';
+        ctx.fillText(this.isMobile ? 'Tap to Start' : 'Press Space to Start',
+            this.canvas.width / 2, this.canvas.height / 2 + 40);
+        ctx.globalAlpha = 1;
+        ctx.textAlign = 'left';
+    }
+
+    lerpColor(a, b, t) {
+        const ah = parseInt(a.replace(/#/g, ''), 16);
+        const bh = parseInt(b.replace(/#/g, ''), 16);
+        const ar = ah >> 16, ag = (ah >> 8) & 0xff, ab = ah & 0xff;
+        const br = bh >> 16, bg = (bh >> 8) & 0xff, bb = bh & 0xff;
+        const rr = Math.round(ar + (br - ar) * t);
+        const rg = Math.round(ag + (bg - ag) * t);
+        const rb = Math.round(ab + (bb - ab) * t);
+        return `#${((rr << 16) | (rg << 8) | rb).toString(16).padStart(6, '0')}`;
+    }
+
+    createExplosion(x, y) {
+        const numParticles = 40;
+        for (let i = 0; i < numParticles; i++) {
+            const angle = (Math.PI * 2 * i) / numParticles;
+            const speed = 2 + Math.random() * 3;
+            this.explosionParticles.push(new ExplosionParticle(x, y, angle, speed));
         }
     }
 
-    reset() {
-        // Stop helicopter sound if playing
+    handleCollision() {
+        this.gameState = 'gameover';
+        this.isGameOver = true;
+        if (this.isSpaceKeyDown) this.waitForSpaceRelease = true;
+
+        // Screen shake
+        this.shakeAmount = 12;
+        this.shakeDuration = 20;
+
+        this.gameAudio.play('crash');
+        this.createExplosion(this.helicopter.x, this.helicopter.y);
+
         if (this.helicopter.liftSound) {
             this.gameAudio.stopSound(this.helicopter.liftSound);
             this.helicopter.liftSound = null;
         }
-        
-        // Store the current helicopter type before creating a new helicopter
+        this.updateHighScore();
+    }
+
+    reset() {
+        if (this.helicopter.liftSound) {
+            this.gameAudio.stopSound(this.helicopter.liftSound);
+            this.helicopter.liftSound = null;
+        }
         const currentType = this.selectedHelicopterType || 'scout';
-        
-        // Create new helicopter - position it higher to sit on the skids
         this.helicopter = new Helicopter(130, this.canvas.height - 60, this.canvas, this.gameAudio);
-        
-        // Set the helicopter type to the previously selected type
         this.helicopter.setType(currentType);
-        
         this.helipad = new Helipad(this.canvas, 30);
         this.obstacles = [];
         this.obstacleTimer = 0;
+        this.gems = [];
+        this.gemTimer = 0;
+        this.scorePopups = [];
         this.score = 0;
         this.isGameOver = false;
         this.lastMilestone = 0;
         this.gameState = 'start';
-        
-        // Clear explosion particles
         this.explosionParticles = [];
-        
-        // Recreate home screen elements
+        this.shakeAmount = 0;
+        this.shakeDuration = 0;
         this.createHomeScreenElements();
     }
 
-    start() {
-        requestAnimationFrame((time) => this.gameLoop(time));
-    }
-
+    // --- Leaderboard ---
     updateLeaderboardDisplay() {
-        // Add header row
         let leaderboardHTML = `
             <div class="score-entry header">
                 <span>Pilot</span>
@@ -1815,40 +1739,25 @@ class Game {
                 <span>Score</span>
             </div>
         `;
-        
-        // Add entries
         leaderboardHTML += this.leaderboard
             .map((entry, index) => {
                 let position;
-                switch(index) {
-                    case 0:
-                        position = '🥇';  // Gold medal
-                        break;
-                    case 1:
-                        position = '🥈';  // Silver medal
-                        break;
-                    case 2:
-                        position = '🥉';  // Bronze medal
-                        break;
-                    default:
-                        position = `${index + 1}.`;
+                switch (index) {
+                    case 0: position = '🥇'; break;
+                    case 1: position = '🥈'; break;
+                    case 2: position = '🥉'; break;
+                    default: position = `${index + 1}.`;
                 }
-                
-                // Use a default value if helicopterType is not available (for backward compatibility)
                 const helicopterType = entry.helicopterType || '---';
-                
-                // Format score with leading zeros at 60% opacity
                 const scoreStr = entry.score.toString();
                 const paddedScore = scoreStr.padStart(6, '0');
                 const leadingZerosCount = paddedScore.length - scoreStr.length;
-                
                 let formattedScore = '';
                 if (leadingZerosCount > 0) {
-                    formattedScore = `<span style="opacity: 0.6">${paddedScore.substring(0, leadingZerosCount)}</span>${scoreStr}`;
+                    formattedScore = `<span style="opacity: 0.3">${paddedScore.substring(0, leadingZerosCount)}</span>${scoreStr}`;
                 } else {
                     formattedScore = scoreStr;
                 }
-                
                 return `
                     <div class="score-entry">
                         <span>${position} ${entry.initials}</span>
@@ -1857,7 +1766,6 @@ class Game {
                     </div>
                 `;
             }).join('');
-            
         this.leaderboardElement.innerHTML = leaderboardHTML;
     }
 
@@ -1884,35 +1792,23 @@ class Game {
     }
 
     updateHighScore() {
-        // Compare raw scores (not divided)
-        if (this.score > this.highScore) {
-            this.highScore = this.score;
-        }
-        
+        if (this.score > this.highScore) this.highScore = this.score;
+
         const currentScore = Math.floor(this.score / 10);
-        // Only show modal and play sound if we make it onto the leaderboard
         if (this.leaderboard.length < 5 || currentScore > this.leaderboard[this.leaderboard.length - 1].score) {
-            // Play high score sound
-            setTimeout(() => {
-                this.gameAudio.play('highScore');
-            }, 500);
-            
-            // Show modal
+            setTimeout(() => { this.gameAudio.play('highScore'); }, 500);
+
             const modal = document.getElementById('highScoreModal');
             const input = document.getElementById('initialsInput');
             const submitBtn = document.getElementById('submitScore');
-            
+
             modal.style.display = 'flex';
             input.value = '';
             input.focus();
-            
+
             const handleSubmit = () => {
                 let initials = input.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) || 'AAA';
-                
-                // Capitalize first letter of helicopter type for display
                 const helicopterType = this.selectedHelicopterType.charAt(0).toUpperCase() + this.selectedHelicopterType.slice(1);
-                
-                // Add new score to Firebase
                 const newScoreRef = this.database.ref('scores').push();
                 newScoreRef.set({
                     score: currentScore,
@@ -1920,111 +1816,52 @@ class Game {
                     date: new Date().toLocaleDateString(),
                     helicopterType: helicopterType
                 }).then(() => {
-                    // Reload leaderboard after adding new score
                     this.loadLeaderboard();
                 }).catch((error) => {
                     console.error('Error submitting score:', error);
                 });
-                
                 modal.style.display = 'none';
-                
                 submitBtn.removeEventListener('click', handleSubmit);
                 input.removeEventListener('keypress', handleKeypress);
             };
-            
+
             const handleKeypress = (e) => {
                 if (e.key === 'Enter') handleSubmit();
             };
-            
+
             submitBtn.addEventListener('click', handleSubmit);
             input.addEventListener('keypress', handleKeypress);
         }
     }
 
-    // Add new method for explosion effect
-    createExplosion(x, y) {
-        const numParticles = 30;
-        for (let i = 0; i < numParticles; i++) {
-            const angle = (Math.PI * 2 * i) / numParticles;
-            const speed = 2 + Math.random() * 2;
-            const particle = new ExplosionParticle(x, y, angle, speed);
-            this.explosionParticles.push(particle);
-        }
-    }
-
-    handleCollision() {
-        this.gameState = 'gameover';
-        this.isGameOver = true;
-        
-        // Set flag to wait for space release if space is currently down
-        if (this.isSpaceKeyDown) {
-            this.waitForSpaceRelease = true;
-        }
-        
-        // Play crash sound first
-        this.gameAudio.play('crash');
-        
-        // Create explosion effect
-        this.createExplosion(this.helicopter.x, this.helicopter.y);
-        
-        // Stop helicopter sound
-        if (this.helicopter.liftSound) {
-            this.gameAudio.stopSound(this.helicopter.liftSound);
-            this.helicopter.liftSound = null;
-        }
-        
-        this.updateHighScore();
-    }
-
-    clearHighScore() {
-        this.highScore = 0;
-        localStorage.setItem('highScore', '0');
-    }
-
-    // Add this method to the Game class to set up the helicopter button
+    // --- Helicopter Selection ---
     setupHelicopterButton() {
         const helicopterButton = document.querySelector('.utility-button[data-action="helicopter"]');
         const modal = document.getElementById('helicopterModal');
         const closeButton = document.getElementById('closeHelicopterModal');
-        
+
         if (helicopterButton) {
-            // Set up click handler to show helicopter modal
             helicopterButton.onclick = () => {
                 if (modal) {
-                    // Populate options before showing the modal
                     this.populateHelicopterOptions();
                     modal.style.display = 'flex';
                 }
             };
         }
-        
         if (closeButton) {
-            // Set up close button handler
-            closeButton.onclick = () => {
-                if (modal) {
-                    modal.style.display = 'none';
-                }
-            };
+            closeButton.onclick = () => { if (modal) modal.style.display = 'none'; };
         }
-        
-        // Add click handler to close modal when clicking outside
         if (modal) {
             modal.addEventListener('click', (event) => {
-                // Check if the click was directly on the modal background
-                // (not on any of its children)
-                if (event.target === modal) {
-                    modal.style.display = 'none';
-                }
+                if (event.target === modal) modal.style.display = 'none';
             });
         }
     }
 
-    // Add populateHelicopterOptions to Game class
     populateHelicopterOptions() {
         const modalContent = document.querySelector('#helicopterModal .modal-content');
         if (!modalContent) return;
-        
-        // Add close icon if it doesn't exist
+
         if (!modalContent.querySelector('.close-icon')) {
             const closeIcon = document.createElement('span');
             closeIcon.className = 'close-icon';
@@ -2034,28 +1871,21 @@ class Game {
             });
             modalContent.prepend(closeIcon);
         }
-        
-        // Remove any existing close button
+
         const closeButton = modalContent.querySelector('.close-button');
-        if (closeButton) {
-            closeButton.remove();
-        }
-        
-        // Add or update title
+        if (closeButton) closeButton.remove();
+
         let titleElement = modalContent.querySelector('h3');
         if (!titleElement) {
             titleElement = document.createElement('h3');
             modalContent.insertBefore(titleElement, modalContent.firstChild);
         }
         titleElement.textContent = 'Choose Your Helicopter';
-        
+
         const optionsContainer = modalContent.querySelector('.helicopter-options');
         if (!optionsContainer) return;
-        
-        // Clear existing options
         optionsContainer.innerHTML = '';
-        
-        // Helper function to generate block ratings
+
         const generateBlockRating = (rating) => {
             let blocks = '';
             for (let i = 1; i <= 5; i++) {
@@ -2063,8 +1893,7 @@ class Game {
             }
             return `<div class="stat-blocks">${blocks}</div>`;
         };
-        
-        // Create card-based options with block rating system
+
         optionsContainer.innerHTML = `
             <div class="helicopter-cards">
                 <div class="helicopter-card ${this.selectedHelicopterType === 'scout' ? 'selected active' : ''}" data-type="scout">
@@ -2107,176 +1936,83 @@ class Game {
                 </div>
             </div>
         `;
-        
-        // Add event listeners to helicopter cards
+
         const helicopterCards = document.querySelectorAll('.helicopter-card');
         helicopterCards.forEach(card => {
             card.addEventListener('click', () => {
                 const type = card.getAttribute('data-type');
                 this.selectedHelicopterType = type;
-                
-                // Remove selected and active classes from all cards
                 helicopterCards.forEach(c => {
                     c.classList.remove('selected');
                     c.classList.remove('active');
                 });
-                
-                // Add selected and active classes to clicked card
                 card.classList.add('selected');
                 card.classList.add('active');
-                
-                // Update helicopter type
-                if (type === 'scout') {
-                    this.helicopter.setType('scout');
-                } else if (type === 'tanker') {
-                    this.helicopter.setType('tanker');
-                }
-                
-                // Update the decorative helicopter on the homescreen
-                if (this.decorativeHelicopter) {
-                    this.decorativeHelicopter.setType(type);
-                }
-                
-                // Close the modal
+                this.helicopter.setType(type);
+                if (this.decorativeHelicopter) this.decorativeHelicopter.setType(type);
                 document.getElementById('helicopterModal').style.display = 'none';
             });
         });
-        
-        // If no helicopter type is selected yet, set the default to Scout
+
         if (!this.selectedHelicopterType) {
             this.selectedHelicopterType = 'scout';
             this.helicopter.setType('scout');
         }
     }
 
-    // Create decorative elements for the home screen
+    // --- Home Screen ---
     createHomeScreenElements() {
-        // Create background formations similar to the game
         this.homeBackgroundFormations = [];
         for (let i = 0; i < 3; i++) {
             this.homeBackgroundFormations.push(new BackgroundFormation(this.canvas));
         }
-        
-        // Create edge formations for top and bottom
         this.homeEdgeFormationTop = new EdgeFormation(this.canvas, true);
         this.homeEdgeFormationBottom = new EdgeFormation(this.canvas, false);
-        
-        // Create a decorative helicopter using the actual helicopter class
-        // Position it in the center of the screen
         this.decorativeHelicopter = new Helicopter(
-            this.canvas.width * 0.2, 
-            this.canvas.height * 0.45, // Position it slightly higher 
+            this.canvas.width * 0.2,
+            this.canvas.height * 0.45,
             this.canvas,
             this.gameAudio
         );
-        
-        // Set the helicopter type based on the selected type or default to scout
         this.decorativeHelicopter.setType(this.selectedHelicopterType || 'scout');
-        
-        // Create ambient particles for the home screen
         this.createAmbientParticles();
     }
-    
-    // Create ambient particles for visual effect
+
     createAmbientParticles() {
         this.ambientParticles = [];
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < 25; i++) {
             this.ambientParticles.push({
                 x: Math.random() * this.canvas.width,
                 y: Math.random() * this.canvas.height,
                 size: 1 + Math.random() * 2,
                 speed: 0.2 + Math.random() * 0.5,
-                opacity: 0.2 + Math.random() * 0.3
+                opacity: 0.15 + Math.random() * 0.2
             });
         }
     }
-    
-    // Draw home screen decorative elements
+
     drawHomeScreenElements() {
-        // Fill background with game's background color
-        this.ctx.fillStyle = '#1a1a1a';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // Draw background formations
-        this.homeBackgroundFormations.forEach(formation => formation.draw(this.ctx));
-        
-        // Draw edge formations
+        this.homeBackgroundFormations.forEach(f => f.draw(this.ctx));
         this.homeEdgeFormationTop.draw(this.ctx);
         this.homeEdgeFormationBottom.draw(this.ctx);
-        
-        // Draw ambient particles
+
         this.ambientParticles.forEach(p => {
             this.ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
             this.ctx.beginPath();
             this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
             this.ctx.fill();
-            
-            // Move particles upward slowly
-            p.y -= p.speed;
-            
-            // Reset particles that go off screen
-            if (p.y < 0) {
-                p.y = this.canvas.height;
-                p.x = Math.random() * this.canvas.width;
-            }
         });
-        
-        // Draw the decorative helicopter
-        // Make the rotor spin even when not lifting, but don't play sound
-        const originalLift = this.decorativeHelicopter.lift;
-        this.decorativeHelicopter.lift = function() {
-            this.isLifting = true;
-            // Don't play sound in this case
-        };
-        
-        this.decorativeHelicopter.isLifting = true;
-        this.decorativeHelicopter.draw(this.ctx);
-        
-        // Restore original lift method
-        this.decorativeHelicopter.lift = originalLift;
-    }
 
-    // Add a reliable mobile detection method
-    detectMobile() {
-        // Use both screen size and touch capability for more reliable detection
-        return (window.innerWidth < 400) || ('ontouchstart' in window) || 
-               (navigator.maxTouchPoints > 0) || 
-               (navigator.msMaxTouchPoints > 0);
+        // Decorative helicopter with spinning rotor
+        if (this.decorativeHelicopter) {
+            this.decorativeHelicopter.isLifting = true;
+            this.decorativeHelicopter.draw(this.ctx);
+        }
     }
 }
 
-// Add new class for explosion particles
-class ExplosionParticle {
-    constructor(x, y, angle, speed) {
-        this.x = x;
-        this.y = y;
-        this.speedX = Math.cos(angle) * speed;
-        this.speedY = Math.sin(angle) * speed;
-        this.size = 5 + Math.random() * 5;
-        this.opacity = 1;
-        this.gravity = 0.2;
-    }
-
-    update() {
-        this.x += this.speedX;
-        this.y += this.speedY;
-        this.speedY += this.gravity;
-        this.opacity -= 0.02;
-        this.size *= 0.95;
-    }
-
-    draw(ctx) {
-        ctx.save();
-        ctx.fillStyle = `rgba(255, 89, 0, ${this.opacity})`;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-    }
-}
-
-// Start the game when the window loads
+// --- Start ---
 window.onload = () => {
     const game = new Game();
     game.start();
-}; 
+};
